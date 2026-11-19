@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>跨平台價格庫存管理｜第一版</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --momo:#c27a96; --yahoo:#8a7fb5; --moplus:#c9956a; --etmall:#6f8fb3;
+  --accent:#b5564e; --bg:#f6f5f3; --ok:#2a8a3a; --warn:#a4744c;
+}
+*{box-sizing:border-box}
+body{font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;margin:0;padding:16px;color:#333;background:var(--bg);font-size:14px}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:#777;font-size:12px;line-height:1.5;max-width:980px}
+.note{background:#fff8e8;border:1px solid #e8d4a8;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13px;color:#6a5520}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.cards{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+.card{background:#fff;border:1px solid #eee;border-radius:10px;padding:10px 14px;min-width:120px}
+.card.plat{border-top:5px solid}
+.card b{display:block;font-size:22px;color:var(--accent)}
+.card .lbl{font-size:12px;color:#666}
+button,.filebtn{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+button.q,.filebtn.q{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.filebtn{display:inline-flex;align-items:center;gap:4px;position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.tab{background:#fff;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:6px 12px;cursor:pointer}
+.tab.act{background:var(--accent);color:#fff}
+.panel{display:none}.panel.act{display:block}
+table{border-collapse:collapse;width:100%;background:#fff}
+th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+th{background:#f1efec;cursor:pointer;white-space:nowrap;position:sticky;top:0;z-index:2}
+tr:nth-child(even) td{background:#fcfcfc}
+.wrap{overflow:auto;max-height:70vh;border:1px solid #eee;border-radius:8px}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px;border:1px solid currentColor}
+.p-momo{background:#c27a9622;color:#a35f7b}
+.p-yahoo{background:#8a7fb522;color:#6e639b}
+.p-moplus{background:#c9956a26;color:#a4744c}
+.p-etmall{background:#6f8fb322;color:#57759a}
+.chip{display:inline-block;border:1px solid;border-radius:4px;padding:1px 6px;margin:2px 2px 0 0;font-size:11px;background:#fff}
+.ids{font-size:11px;color:#888;word-break:break-all}
+.tag{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin:1px}
+.tag.miss{background:#f1f1f1;color:#888}
+.tag.diff{background:#b5564e14;color:#b5564e}
+.tag.low{background:#c9956a1a;color:#a4744c}
+.tag.ok{background:#2a8a3a14;color:#2a8a3a}
+input[type=text],input[type=number],select,textarea{padding:5px 8px;border:1px solid #ccc;border-radius:6px;font:inherit}
+textarea{width:100%;min-height:90px;font:12px/1.4 ui-monospace,monospace}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.box{background:#fff;border:1px solid #eee;border-radius:10px;padding:12px}
+.muted{color:#888;font-size:12px}
+.price{font-weight:700}
+.row-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.toast{position:fixed;right:16px;bottom:16px;background:#333;color:#fff;padding:10px 14px;border-radius:8px;opacity:0;transition:.25s;z-index:99}
+.toast.show{opacity:.95}
+.empty{padding:40px;text-align:center;color:#777;background:#fff;border:1px dashed #ddd;border-radius:10px}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.chkrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label.inline{display:inline-flex;gap:4px;align-items:center}
+.plat-col-momo{border-left:3px solid var(--momo)}
+.plat-col-yahoo{border-left:3px solid var(--yahoo)}
+.plat-col-moplus{border-left:3px solid var(--moplus)}
+.plat-col-etmall{border-left:3px solid var(--etmall)}
+.src-bar{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
+.src{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e4e0db;border-radius:999px;padding:4px 8px 4px 10px;font-size:12px}
+.src.empty{color:#999;background:transparent;border-style:dashed}
+.src .fn{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888}
+.src .rng{color:#6a7a5a}
+.src button{background:transparent;color:#888;border:0;padding:0 4px;font-size:14px;cursor:pointer;line-height:1}
+.src button:hover{color:var(--accent)}
+.sortbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+button.sortbtn{background:#fff;color:#444;border:1px solid #cfcac4;border-radius:6px;padding:5px 10px;font-weight:600}
+button.sortbtn.act{background:#f3ece8;border-color:var(--accent);color:var(--accent)}
+th[data-k].sort-asc::after{content:' ▲'}
+th[data-k].sort-desc::after{content:' ▼'}
+</style>
+</head>
+<body>
+<h1>跨平台價格庫存管理</h1>
+<p class="sub">第一版示範｜改價與改庫存只產生匯出檔，不會直接改後台；各平台 bot 可讀匯出檔／workspace JSON。</p>
+<div class="note">
+  <b>用途：</b>統一價格、查各平台編號、快速改庫存、缺上架查詢、匯入鼎新 A1 即時庫存、庫存緊張警示、指定平台關掉數量。<br/>
+  款號規則：取料號／原廠編號／供應商料號／廠商料號／品號開頭的「英文字母＋數字」（例如 <code>M72C</code>、<code>M72D</code> 都歸 <code>M72</code>；<code>M555A01</code> → <code>M555</code>）。<br/>
+  庫存來源：僅鼎新 A1「庫存量查詢」（品號、品名、單位、庫存數量）。出貨／銷量：僅鼎新 A1「商品銷售排名表」（品號、數量），同一品號會合併加總。都不接出退貨分析。
+</div>
+
+<div class="bar">
+  <label class="filebtn q">匯入 momo 商品<input type="file" accept=".xls,.xlsx" data-imp="momoGoods"/></label>
+  <label class="filebtn q">匯入 momo 變價<input type="file" accept=".xls,.xlsx" data-imp="momoPrice"/></label>
+  <label class="filebtn q">匯入 東森變價<input type="file" accept=".xls,.xlsx" data-imp="etmall"/></label>
+  <label class="filebtn q">匯入 mo+ 變價<input type="file" accept=".xls,.xlsx" data-imp="moplus"/></label>
+  <label class="filebtn q">匯入 Yahoo 資訊<input type="file" accept=".xls,.xlsx" data-imp="yahoo"/></label>
+  <label class="filebtn">匯入 A1 庫存<input type="file" accept=".xls,.xlsx,.csv" data-imp="a1"/></label>
+  <label class="filebtn">匯入 A1 出貨<input type="file" accept=".xls,.xlsx,.csv" data-imp="a1Ship"/></label>
+  <button class="q" id="btnDemo">載入示範</button>
+  <button class="q" id="btnStripAmber">刪除東森 AMBER</button>
+  <button class="q" id="btnClear">清空資料</button>
+  <button class="q" id="btnExportJson">匯出 workspace JSON</button>
+  <label class="filebtn q">匯入 workspace JSON<input type="file" accept=".json" id="impJson"/></label>
+</div>
+<div class="src-bar" id="srcBar"></div>
+<p class="sub" style="margin-top:0">已匯入的來源可按 ✕ 刪除後再重新上傳；同一檔也可直接再匯一次覆蓋。A1 出貨請用鼎新「商品銷售排名表」（可一次匯出一段期間）。</p>
+<div class="bar" id="shipRangeBar" style="display:none">
+  <span class="muted">出貨統計區間</span>
+  <label class="inline"><input type="radio" name="shipRange" value="all" checked/> 全部</label>
+  <label class="inline"><input type="radio" name="shipRange" value="30"/> 近30天</label>
+  <label class="inline"><input type="radio" name="shipRange" value="7"/> 近7天</label>
+  <span class="muted" id="shipRangeHint"></span>
+</div>
+
+<div class="cards" id="statCards"></div>
+
+<div class="tabs" id="tabs">
+  <button class="tab act" data-tab="overview">總覽（依款號）</button>
+  <button class="tab" data-tab="price">價格統一</button>
+  <button class="tab" data-tab="ids">編號查詢</button>
+  <button class="tab" data-tab="stock">庫存管理</button>
+  <button class="tab" data-tab="missing">缺上架</button>
+  <button class="tab" data-tab="export">匯出</button>
+</div>
+
+<!-- 總覽 -->
+<section class="panel act" id="panel-overview">
+  <div class="bar">
+    <input type="text" id="qSearch" placeholder="搜尋款號／品名／編號…" style="min-width:220px"/>
+    <label>價差門檻 <input type="number" id="diffTh" value="50" min="0" style="width:70px"/></label>
+    <label>庫存門檻 <input type="number" id="stockTh" value="10" min="0" style="width:70px"/></label>
+    <label class="inline"><input type="checkbox" id="fMiss"/> 缺平台</label>
+    <label class="inline"><input type="checkbox" id="fDiff"/> 價差超門檻</label>
+    <label class="inline"><input type="checkbox" id="fLow"/> 庫存≤門檻</label>
+    <span class="muted" id="overviewCount"></span>
+  </div>
+  <div id="sort-overview"></div>
+  <div class="wrap"><table id="tblOverview"><thead></thead><tbody></tbody></table></div>
+</section>
+
+<!-- 價格統一 -->
+<section class="panel" id="panel-price">
+  <div class="grid2">
+    <div class="box">
+      <h3 style="margin-top:0">選擇款號或貼上清單</h3>
+      <input type="text" id="priceStyle" placeholder="輸入款號，例如 M638" list="styleList" style="width:100%;margin-bottom:8px"/>
+      <datalist id="styleList"></datalist>
+      <textarea id="priceList" placeholder="或一次貼多個款號，每行一個"></textarea>
+      <div class="bar">
+        <button id="btnLoadPrice">載入</button>
+        <label>目標售價 <input type="number" id="targetPrice" min="1" style="width:100px"/></label>
+        <label class="inline"><input type="checkbox" id="alsoMarket"/> 同步市價＝售價×1.8（四捨五入）</label>
+      </div>
+      <div class="chkrow" style="margin:8px 0">
+        套用平台：
+        <label class="inline"><input type="checkbox" class="platApply" value="momo" checked/> momo</label>
+        <label class="inline"><input type="checkbox" class="platApply" value="yahoo" checked/> Yahoo</label>
+        <label class="inline"><input type="checkbox" class="platApply" value="moplus" checked/> mo+</label>
+        <label class="inline"><input type="checkbox" class="platApply" value="etmall" checked/> 東森</label>
+      </div>
+      <label class="inline"><input type="checkbox" id="chgCost"/> 同時改寫進價／成本（預設不改；勾選才依公式試算寫入匯出）</label>
+      <p class="muted">毛利參考（僅預覽，不自動改進價）：momo／東森 成本≈售價×0.85×0.88；Yahoo 成本≈售價×0.85。</p>
+      <div class="bar">
+        <button id="btnApplyPrice">套用目標價到暫存</button>
+        <button class="q" id="btnClearDraft">清除暫存改價</button>
+      </div>
+    </div>
+    <div class="box">
+      <h3 style="margin-top:0">目前價格／毛利預覽</h3>
+      <div id="pricePreview" class="muted">先載入款號</div>
+    </div>
+  </div>
+  <div id="sort-price"></div>
+  <div class="wrap" style="margin-top:12px"><table id="tblPrice"><thead></thead><tbody></tbody></table></div>
+</section>
+
+<!-- 編號查詢 -->
+<section class="panel" id="panel-ids">
+  <div class="bar">
+    <input type="text" id="idSearch" placeholder="款號／料號／商品編號／賣場編號…" style="min-width:280px"/>
+  </div>
+  <div id="sort-ids"></div>
+  <div class="wrap"><table id="tblIds"><thead></thead><tbody></tbody></table></div>
+</section>
+
+<!-- 庫存 -->
+<section class="panel" id="panel-stock">
+  <div class="bar">
+    <label>低庫存門檻 <input type="number" id="stockTh2" value="10" min="0" style="width:70px"/></label>
+    <span class="muted">A1 庫存：品號、品名、單位、庫存數量。A1 出貨：商品銷售排名表的品號、數量。同一品號會合併加總。不使用出退貨分析。</span>
+  </div>
+  <div id="sort-stock"></div>
+  <div class="wrap"><table id="tblStock"><thead></thead><tbody></tbody></table></div>
+  <div class="bar">
+    <button id="btnExportStockHint">匯出「關閉數量」提示 CSV</button>
+    <span class="muted">勾選平台「關掉數量」後匯出；v1 產生提示檔，正式後台模板待補。</span>
+  </div>
+</section>
+
+<!-- 缺上架 -->
+<section class="panel" id="panel-missing">
+  <div class="bar">
+    <label class="inline"><input type="checkbox" id="missMomo" checked/> 缺 momo</label>
+    <label class="inline"><input type="checkbox" id="missYahoo" checked/> 缺 Yahoo</label>
+    <label class="inline"><input type="checkbox" id="missMoplus" checked/> 缺 mo+</label>
+    <label class="inline"><input type="checkbox" id="missEtmall" checked/> 缺東森</label>
+  </div>
+  <div id="sort-missing"></div>
+  <div class="wrap"><table id="tblMissing"><thead></thead><tbody></tbody></table></div>
+</section>
+
+<!-- 匯出 -->
+<section class="panel" id="panel-export">
+  <div class="box">
+    <h3 style="margin-top:0">匯出批次變價檔（依暫存改價）</h3>
+    <p class="muted">需先在「價格統一」套用目標價。Yahoo 官方變價模板尚未提供，v1 匯出簡易欄位。</p>
+    <div class="bar">
+      <button id="exMomo">匯出 momo 價格資料異動</button>
+      <button id="exEtmall">匯出東森商品變價</button>
+      <button id="exMoplus">匯出 mo+ 價格資料</button>
+      <button id="exYahoo">匯出 Yahoo 簡易變價</button>
+    </div>
+    <h3>其他</h3>
+    <div class="bar">
+      <button class="q" id="exOverview">匯出總覽 CSV</button>
+      <button class="q" id="exMissing">匯出缺上架 CSV</button>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const LS_KEY = 'price_stock_mgr_v2';
+const LS_META = 'price_stock_mgr_v2_meta';
+const IDB_NAME = 'price_stock_mgr_v2';
+const IDB_STORE = 'workspace';
+const IDB_KEY = 'db';
+const PLATS = [
+  {k:'momo', name:'momo', color:'var(--momo)'},
+  {k:'yahoo', name:'Yahoo', color:'var(--yahoo)'},
+  {k:'moplus', name:'mo+', color:'var(--moplus)'},
+  {k:'etmall', name:'東森', color:'var(--etmall)'}
+];
+
+/** @type {{
+  meta: object,
+  momoGoods: array,
+  momoPrice: array,
+  etmall: array,
+  moplus: array,
+  yahoo: array,
+  a1: object, // 品號 -> {name, unit, qty}
+  a1Ship: object, // 品號 -> {code, name, qty, dates?}
+  drafts: object, // style -> {price, market?, plats:[], chgCost?}
+  closeQty: object // style -> {momo:bool,...}
+}} */
+let DB = emptyDB();
+
+function defaultSorts(){
+  return {
+    overview:{key:'style', dir:1},
+    missing:{key:'shipQty', dir:-1},
+    stock:{key:'a1Qty', dir:1},
+    price:{key:'style', dir:1},
+    ids:{key:'style', dir:1}
+  };
+}
+function emptyDB(){
+  return {
+    meta:{loadedAt:null, counts:{}, files:{}, sorts:defaultSorts(), shipRange:'all'},
+    momoGoods:[], momoPrice:[], etmall:[], moplus:[], yahoo:[],
+    a1:{}, a1Ship:{}, drafts:{}, closeQty:{}
+  };
+}
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+function slimRow(x, keys){
+  const o={};
+  keys.forEach(k=>{ if(x[k]!=null && x[k]!=='') o[k]=x[k]; });
+  return o;
+}
+function packDB(){
+  return {
+    meta:Object.assign({}, DB.meta, {savedAt:new Date().toISOString()}),
+    momoGoods:DB.momoGoods.map(x=>slimRow(x,['plat','goodsId','skuId','name','sku','style','spec','cost','price','market','qty','status'])),
+    momoPrice:DB.momoPrice.map(x=>slimRow(x,['plat','goodsId','name','cost','costUntax','price','market','margin','md','planner','note','effective'])),
+    etmall:DB.etmall.map(x=>slimRow(x,['plat','saleId','webId','goodsId','sku','style','name','market','price','cost','margin'])),
+    moplus:DB.moplus.map(x=>slimRow(x,['plat','goodsId','skuId','name','spec1','spec2','sku','style','price','market','effective'])),
+    yahoo:DB.yahoo.map(x=>slimRow(x,['plat','storeId','goodsId','name','suggest','price','sku','style','spec','cost','stockPrep','qty','status','identity'])),
+    a1:DB.a1,
+    a1Ship:DB.a1Ship,
+    drafts:DB.drafts,
+    closeQty:DB.closeQty
+  };
+}
+function openIDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+let _saveTimer=null, _saveBusy=false, _saveQueued=false;
+async function saveIDB(payload){
+  const db=await openIDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(payload, IDB_KEY);
+    tx.oncomplete=()=>{ db.close(); resolve(); };
+    tx.onerror=()=>{ db.close(); reject(tx.error); };
+  });
+}
+async function loadIDB(){
+  const db=await openIDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const req=tx.objectStore(IDB_STORE).get(IDB_KEY);
+    req.onsuccess=()=>{ db.close(); resolve(req.result||null); };
+    req.onerror=()=>{ db.close(); reject(req.error); };
+  });
+}
+function save(){
+  // debounce + IndexedDB（容量比 localStorage 大很多，重新整理不會掉）
+  _saveQueued=true;
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(flushSave, 80);
+}
+async function flushSave(){
+  if(_saveBusy){ _saveQueued=true; return; }
+  _saveBusy=true; _saveQueued=false;
+  const payload=packDB();
+  try{
+    await saveIDB(payload);
+    try{ localStorage.setItem(LS_META, JSON.stringify({savedAt:payload.meta.savedAt, counts:payload.meta.counts||{}})); }catch(_){}
+  }catch(e){
+    console.warn(e);
+    // 後備：仍試 localStorage（可能失敗）
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(payload)); toast('已暫存（瀏覽器本機）'); }
+    catch(e2){ toast('暫存失敗，請改按「匯出 workspace JSON」備份'); }
+  }finally{
+    _saveBusy=false;
+    if(_saveQueued) save();
+  }
+}
+function loadLS(){
+  // sync stub kept for callers; real load is loadPersisted()
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const o=JSON.parse(raw);
+    DB=Object.assign(emptyDB(), o);
+    recomputeStyles();
+  }catch(e){ console.warn(e); }
+}
+async function loadPersisted(){
+  try{
+    const o=await loadIDB();
+    if(o && typeof o==='object'){
+      DB=Object.assign(emptyDB(), o);
+      recomputeStyles();
+      return 'idb';
+    }
+  }catch(e){ console.warn('idb load', e); }
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(raw){
+      DB=Object.assign(emptyDB(), JSON.parse(raw));
+      recomputeStyles();
+      // migrate to IDB
+      try{ await saveIDB(packDB()); }catch(_){}
+      return 'ls';
+    }
+  }catch(e){ console.warn(e); }
+  return null;
+}
+
+function styleCode(sku){
+  if(sku==null) return '';
+  const raw=String(sku).trim().toUpperCase();
+  if(!raw) return '';
+  // 字母＋數字為款號，去掉後面的色碼／尺碼後綴：M72C／M72D→M72，M555A01→M555
+  const m=raw.match(/^([A-Z]+\d+)/);
+  if(m) return m[1];
+  const f=raw.match(/^[A-Z0-9]{4}/);
+  return f? f[0] : raw.slice(0,4);
+}
+function rekeyStyleMap(map, mergeFn){
+  if(!map || typeof map!=='object') return {};
+  const out={};
+  Object.keys(map).forEach(k=>{
+    const nk=styleCode(k)||k;
+    if(!out[nk]) out[nk]=map[k];
+    else if(mergeFn) out[nk]=mergeFn(out[nk], map[k]);
+    else out[nk]=Object.assign({}, out[nk], map[k]);
+  });
+  return out;
+}
+function recomputeStyles(){
+  (DB.momoGoods||[]).forEach(x=>{ if(x.sku) x.style=styleCode(x.sku); });
+  (DB.etmall||[]).forEach(x=>{ if(x.sku) x.style=styleCode(x.sku); });
+  (DB.moplus||[]).forEach(x=>{ if(x.sku) x.style=styleCode(x.sku); });
+  (DB.yahoo||[]).forEach(x=>{ if(x.sku) x.style=styleCode(x.sku); });
+  DB.drafts=rekeyStyleMap(DB.drafts||{}, (a,b)=>{
+    const later=(b&&b.at&&(!a||!a.at||b.at>a.at))?b:a;
+    const other=later===b?a:b;
+    const plats=[...new Set([].concat((later&&later.plats)||[], (other&&other.plats)||[]))];
+    return Object.assign({}, other, later, {plats});
+  });
+  DB.closeQty=rekeyStyleMap(DB.closeQty||{}, (a,b)=>{
+    const o=Object.assign({}, a);
+    Object.keys(b||{}).forEach(k=>{ if(b[k]) o[k]=true; });
+    return o;
+  });
+  if(!DB.a1Ship) DB.a1Ship={};
+  if(!DB.meta) DB.meta={};
+  if(!DB.meta.sorts) DB.meta.sorts=defaultSorts();
+  else DB.meta.sorts=Object.assign(defaultSorts(), DB.meta.sorts);
+  if(!DB.meta.shipRange) DB.meta.shipRange='all';
+}
+function num(v){
+  if(v==null || v==='') return null;
+  if(typeof v==='number') return isFinite(v)?v:null;
+  const s=String(v).replace(/,/g,'').replace(/%/,'').trim();
+  if(!s) return null;
+  const n=Number(s);
+  return isFinite(n)?n:null;
+}
+function s(v){ return v==null?'':String(v).trim(); }
+function todayStr(){
+  const d=new Date();
+  const z=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'/'+z(d.getMonth()+1)+'/'+z(d.getDate());
+}
+
+function readSheet(file){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      try{
+        const wb=XLSX.read(fr.result,{type:'array', cellDates:true});
+        resolve(wb);
+      }catch(e){ reject(e); }
+    };
+    fr.onerror=()=>reject(fr.error);
+    fr.readAsArrayBuffer(file);
+  });
+}
+function sheetToRows(wb, preferNames){
+  let name=wb.SheetNames[0];
+  if(preferNames && preferNames.length){
+    const hit=wb.SheetNames.find(n=>preferNames.some(p=>n.includes(p)));
+    if(hit) name=hit;
+  }
+  const ws=wb.Sheets[name];
+  // header detection: find first row with enough non-empty
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1, defval:null, raw:false});
+  let hi=0;
+  for(let i=0;i<Math.min(aoa.length,8);i++){
+    const row=aoa[i]||[];
+    const filled=row.filter(x=>x!=null && String(x).trim()!=='').length;
+    if(filled>=3){ hi=i; break; }
+  }
+  // mo+ has title row then header
+  const header=(aoa[hi]||[]).map(x=>s(x));
+  const rows=[];
+  for(let r=hi+1;r<aoa.length;r++){
+    const raw=aoa[r]||[];
+    if(raw.every(x=>x==null||String(x).trim()==='')) continue;
+    const obj={};
+    header.forEach((h,i)=>{ if(h) obj[h]=raw[i]; });
+    rows.push(obj);
+  }
+  return {sheet:name, header, rows};
+}
+function pick(obj, names){
+  for(const n of names){
+    if(obj[n]!=null && s(obj[n])!=='') return obj[n];
+  }
+  // fuzzy: trim spaces / newlines in keys
+  const keys=Object.keys(obj);
+  for(const n of names){
+    const hit=keys.find(k=>s(k).replace(/\s+/g,'')===n.replace(/\s+/g,''));
+    if(hit && obj[hit]!=null && s(obj[hit])!=='') return obj[hit];
+  }
+  return null;
+}
+
+/* ---------- parsers ---------- */
+function parseMomoGoods(rows){
+  return rows.map(r=>{
+    const sku=s(pick(r,['商品原廠編號']));
+    return {
+      plat:'momo',
+      goodsId:s(pick(r,['商品編號'])),
+      skuId:s(pick(r,['單品編號'])),
+      name:s(pick(r,['商品名稱'])),
+      sku,
+      style:styleCode(sku),
+      spec:s(pick(r,['單品詳細'])),
+      cost:num(pick(r,['進價'])),
+      price:num(pick(r,['售價(含稅)','售價'])),
+      market:num(pick(r,['市價'])),
+      qty:num(pick(r,['可接單量'])),
+      status:s(pick(r,['銷售狀況']))};
+  }).filter(x=>x.goodsId || x.sku);
+}
+function parseMomoPrice(rows){
+  return rows.map(r=>{
+    return {
+      plat:'momo',
+      goodsId:s(pick(r,['商品編號'])),
+      name:s(pick(r,['商品名稱'])),
+      cost:num(pick(r,['進價'])),
+      costUntax:num(pick(r,['進價(未稅)'])),
+      price:num(pick(r,['售價'])),
+      market:num(pick(r,['市價'])),
+      margin:pick(r,['毛利率(%)']),
+      md:s(pick(r,['負責MD聯絡資訊'])),
+      planner:s(pick(r,['負責企劃聯絡資訊'])),
+      note:s(pick(r,['備註'])),
+      effective:s(pick(r,['生效日期']))};
+  }).filter(x=>x.goodsId);
+}
+function stripEtmallAmber(list){
+  const kept=[], removed=[];
+  (list||[]).forEach(x=>{
+    const n=s(x.name).trim();
+    // 【Amber】… / [Amber]… / Amber_… / Amber-…
+    if(/^[【\[]?\s*Amber/i.test(n) || n.toUpperCase().startsWith('AMBER')) removed.push(x);
+    else kept.push(x);
+  });
+  return {kept, removed};
+}
+function parseEtmall(rows){
+  return rows.map(r=>{
+    const sku=s(pick(r,['廠商料號']));
+    return {
+      plat:'etmall',
+      saleId:s(pick(r,['銷售編號'])),
+      webId:s(pick(r,['網站編號'])),
+      goodsId:s(pick(r,['商品編號'])),
+      sku,
+      style:styleCode(sku),
+      name:s(pick(r,['商品名稱'])),
+      market:num(pick(r,['市價'])),
+      price:num(pick(r,['售價'])),
+      cost:num(pick(r,['成本價'])),
+      margin:pick(r,['毛利率'])};
+  }).filter(x=>x.goodsId || x.sku);
+}
+function parseMoplus(rows){
+  return rows.map(r=>{
+    const sku=s(pick(r,['商品原廠編號']));
+    return {
+      plat:'moplus',
+      goodsId:s(pick(r,['商品編號'])),
+      skuId:s(pick(r,['單品編號'])),
+      name:s(pick(r,['商品名稱'])),
+      spec1:s(pick(r,['規格一'])),
+      spec2:s(pick(r,['規格二'])),
+      sku,
+      style:styleCode(sku),
+      price:num(pick(r,['售價'])),
+      market:num(pick(r,['市價'])),
+      effective:s(pick(r,['生效日期']))};
+  }).filter(x=>x.goodsId || x.sku);
+}
+function parseYahoo(rows){
+  return rows.map(r=>{
+    const sku=s(pick(r,['供應商料號']));
+    const nameAttr=s(pick(r,['名稱']));
+    const acc=s(pick(r,['賣場配件名稱']));
+    return {
+      plat:'yahoo',
+      storeId:s(pick(r,['賣場編號'])),
+      goodsId:s(pick(r,['商品序號'])),
+      name:s(pick(r,['賣場名稱'])),
+      suggest:num(pick(r,['廠商建議價'])),
+      price:num(pick(r,['賣場售價','配件售價'])),
+      sku,
+      style:styleCode(sku),
+      spec:[nameAttr,acc].filter(Boolean).join(' / '),
+      cost:num(pick(r,['商品成本'])),
+      stockPrep:num(pick(r,['備貨數量'])),
+      qty:num(pick(r,['可售數量'])),
+      status:s(pick(r,['賣場狀態'])),
+      identity:s(pick(r,['身分/型態']))};
+  }).filter(x=>x.storeId || x.goodsId);
+}
+function normHead(h){ return s(h).replace(/\s+/g,''); }
+function findColKey(keys, cands, opts){
+  const deny=(opts&&opts.deny)||[];
+  const nk=keys.map(k=>({k, n:normHead(k)}));
+  for(const c of cands){
+    const hit=nk.find(x=>x.n===c);
+    if(hit) return hit.k;
+  }
+  for(const c of cands){
+    const hit=nk.find(x=>{
+      if(!x.n.includes(c)) return false;
+      if(deny.some(d=>d && x.n.includes(d))) return false;
+      if(c==='品號' && /品號數/.test(x.n)) return false;
+      if(c==='編號' && x.n!=='編號' && x.n!=='商品編號') return false;
+      return true;
+    });
+    if(hit) return hit.k;
+  }
+  return null;
+}
+function ymd(dt){
+  if(!(dt instanceof Date) || isNaN(dt)) return null;
+  const y=dt.getFullYear(), m=dt.getMonth()+1, d=dt.getDate();
+  if(y<1990||y>2100) return null;
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function parseDate(v){
+  if(v==null || v==='') return null;
+  if(v instanceof Date) return ymd(v);
+  if(typeof v==='number' && isFinite(v) && v>20000 && v<80000){
+    const epoch=new Date(Date.UTC(1899,11,30));
+    return ymd(new Date(epoch.getTime()+Math.round(v)*86400000));
+  }
+  const t=String(v).trim();
+  let m=t.match(/(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})/);
+  if(m) return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0');
+  m=t.match(/^(\d{4})(\d{2})(\d{2})/);
+  if(m){
+    const mm=Number(m[2]), dd=Number(m[3]);
+    if(mm>=1&&mm<=12&&dd>=1&&dd<=31) return m[1]+'-'+m[2]+'-'+m[3];
+  }
+  return null;
+}
+function inferFileDate(filename, sheet){
+  const texts=[sheet||'', filename||''].join(' ');
+  let m=texts.match(/20\d{2}[01]\d[0-3]\d/);
+  if(m){
+    const t=m[0];
+    const mm=Number(t.slice(4,6)), dd=Number(t.slice(6,8));
+    if(mm>=1&&mm<=12&&dd>=1&&dd<=31) return t.slice(0,4)+'-'+t.slice(4,6)+'-'+t.slice(6,8);
+  }
+  m=String(filename||'').match(/^(\d{4})(?:[._-]|$)/);
+  if(m){
+    const mm=m[1].slice(0,2), dd=m[1].slice(2,4);
+    const mi=Number(mm), di=Number(dd);
+    if(mi>=1&&mi<=12&&di>=1&&di<=31){
+      const now=new Date();
+      let y=now.getFullYear();
+      const cand=new Date(y, mi-1, di);
+      if(cand.getTime()-now.getTime()>7*86400000) y--;
+      return y+'-'+mm+'-'+dd;
+    }
+  }
+  return null;
+}
+function parseA1(rows){
+  const map={};
+  rows.forEach(r=>{
+    const keys=Object.keys(r);
+    const codeKey=findColKey(keys,['品號','料號','貨號','商品編號','品号']);
+    const code=s(codeKey?r[codeKey]:'').toUpperCase();
+    if(!code) return;
+    const nameKey=findColKey(keys,['品名','品名規格','商品名稱']);
+    const name=s(nameKey?r[nameKey]:'');
+    const unitKey=findColKey(keys,['單位','单位']);
+    const qtyKey=findColKey(keys,['庫存數量','庫存量','現有庫存','现有库存','庫存'],{deny:['出貨','銷貨','銷售']});
+    const qty=num(qtyKey?r[qtyKey]:null);
+    const add=qty==null?0:qty;
+    if(map[code]){
+      map[code].qty=(map[code].qty||0)+add;
+      if(!map[code].name && name) map[code].name=name;
+      if(!map[code].unit && unitKey) map[code].unit=s(r[unitKey]);
+    } else {
+      map[code]={code, name, unit:s(unitKey?r[unitKey]:''), qty:add};
+    }
+  });
+  return map;
+}
+function parseA1Ship(rows, fileDate){
+  const items={};
+  rows.forEach(r=>{
+    const keys=Object.keys(r);
+    const codeKey=findColKey(keys,['品號','料號','貨號','商品編號']);
+    if(!codeKey) return;
+    const code=s(r[codeKey]).toUpperCase();
+    if(!code) return;
+    const qtyKey=findColKey(keys,['出貨數量','銷貨數量','銷售數量','數量'],{deny:['庫存','退貨','佔比']});
+    const qty=num(qtyKey?r[qtyKey]:null);
+    if(qty==null || qty<=0) return;
+    const nameKey=findColKey(keys,['品名','商品名稱','品名規格']);
+    const dateKey=findColKey(keys,['出貨日期','單據日期','銷貨日期','日期'],{deny:['生效']});
+    let dt=dateKey?parseDate(r[dateKey]):null;
+    if(!dt && fileDate) dt=fileDate;
+    const name=s(nameKey?r[nameKey]:'');
+    if(!items[code]) items[code]={code, name, qty:0, dates:{}};
+    items[code].qty+=qty;
+    if(!items[code].name && name) items[code].name=name;
+    if(dt) items[code].dates[dt]=(items[code].dates[dt]||0)+qty;
+  });
+  return items;
+}
+function shipDateRange(){
+  let min=null, max=null, count=0;
+  Object.values(DB.a1Ship||{}).forEach(rec=>{
+    Object.keys(rec.dates||{}).forEach(d=>{
+      if(!d) return;
+      count++;
+      if(!min || d<min) min=d;
+      if(!max || d>max) max=d;
+    });
+  });
+  return {min, max, hasDates:count>0, same: !!(min&&max&&min===max)};
+}
+function shipFilterStart(){
+  const meta=shipDateRange();
+  if(!meta.hasDates) return null;
+  const mode=String((DB.meta&&DB.meta.shipRange)||'all');
+  if(mode==='all') return null;
+  const days=Number(mode);
+  if(!days) return null;
+  const parts=meta.max.split('-').map(Number);
+  const end=new Date(parts[0], parts[1]-1, parts[2]);
+  end.setDate(end.getDate()-(days-1));
+  return ymd(end);
+}
+function recShipQty(rec, start, end){
+  if(!start) return rec.qty||0;
+  const dates=rec.dates||{};
+  const keys=Object.keys(dates);
+  if(!keys.length) return 0;
+  let sum=0;
+  keys.forEach(d=>{ if(d>=start && (!end || d<=end)) sum+=dates[d]; });
+  return sum;
+}
+function shipQtyOfStyle(style){
+  const meta=shipDateRange();
+  const start=shipFilterStart();
+  const end=meta.max;
+  let sum=0;
+  Object.values(DB.a1Ship||{}).forEach(rec=>{
+    if(styleCode(rec.code)!==style) return;
+    sum+=recShipQty(rec, start, end);
+  });
+  return sum;
+}
+function shipFmtRange(){
+  const meta=shipDateRange();
+  if(!meta.hasDates) return '';
+  if(meta.same) return meta.min.replace(/-/g,'/');
+  return meta.min.replace(/-/g,'/')+'–'+meta.max.replace(/-/g,'/');
+}
+
+/* ---------- unify by style ---------- */
+function buildIndex(){
+  /** style -> aggregated */
+  const map=new Map();
+  function ensure(style, nameHint){
+    if(!style) return null;
+    if(!map.has(style)){
+      map.set(style,{
+        style, name:nameHint||'',
+        momo:[], yahoo:[], moplus:[], etmall:[],
+        a1Qty:null, shipQty:0
+      });
+    }
+    const o=map.get(style);
+    if(!o.name && nameHint) o.name=nameHint;
+    return o;
+  }
+  (DB.momoGoods||[]).forEach(x=>{ const o=ensure(styleCode(x.sku||x.style),x.name); if(o) o.momo.push(x); });
+  // if only momoPrice (no goods), still try link later via goodsId — skip style
+  (DB.moplus||[]).forEach(x=>{ const o=ensure(styleCode(x.sku||x.style),x.name); if(o) o.moplus.push(x); });
+  (DB.etmall||[]).forEach(x=>{ const o=ensure(styleCode(x.sku||x.style),x.name); if(o) o.etmall.push(x); });
+  (DB.yahoo||[]).forEach(x=>{
+    if(!x.sku) return;
+    const o=ensure(styleCode(x.sku||x.style),x.name); if(o) o.yahoo.push(x);
+  });
+
+  // A1 庫存：依新款號規則加總；同一品號在 parse 時已合併
+  const a1ByStyle={};
+  Object.values(DB.a1||{}).forEach(rec=>{
+    const st=styleCode(rec.code);
+    if(!st) return;
+    a1ByStyle[st]=(a1ByStyle[st]||0)+(rec.qty||0);
+    ensure(st, rec.name);
+  });
+  const shipStart=shipFilterStart();
+  const shipEnd=(shipDateRange().max||null);
+  const shipByStyle={};
+  Object.values(DB.a1Ship||{}).forEach(rec=>{
+    const st=styleCode(rec.code);
+    if(!st) return;
+    shipByStyle[st]=(shipByStyle[st]||0)+recShipQty(rec, shipStart, shipEnd);
+    ensure(st, rec.name);
+  });
+  map.forEach((o,st)=>{
+    if(a1ByStyle[st]!=null) o.a1Qty=a1ByStyle[st];
+    o.shipQty=shipByStyle[st]||0;
+  });
+  return map;
+}
+
+function platPrice(list){
+  // representative price: first non-null
+  for(const x of list){ if(x.price!=null) return x.price; }
+  return null;
+}
+function platIds(list, plat){
+  if(plat==='momo') return [...new Set(list.map(x=>x.goodsId).filter(Boolean))];
+  if(plat==='yahoo') return [...new Set(list.map(x=>x.storeId||x.goodsId).filter(Boolean))];
+  if(plat==='moplus') return [...new Set(list.map(x=>x.goodsId).filter(Boolean))];
+  if(plat==='etmall') return [...new Set(list.map(x=>x.webId||x.saleId||x.goodsId).filter(Boolean))];
+  return [];
+}
+function platQty(list){
+  let sum=0, any=false;
+  list.forEach(x=>{ if(x.qty!=null){ sum+=x.qty; any=true; }});
+  return any?sum:null;
+}
+function priceSpread(prices){
+  const arr=prices.filter(p=>p!=null);
+  if(arr.length<2) return 0;
+  return Math.max(...arr)-Math.min(...arr);
+}
+
+/* ---------- UI ---------- */
+const SRC_DEFS=[
+  {k:'momoGoods', label:'momo 商品', clear(){ DB.momoGoods=[]; if(DB.meta.counts) DB.meta.counts.momoGoods=0; }},
+  {k:'momoPrice', label:'momo 變價', clear(){ DB.momoPrice=[]; if(DB.meta.counts) DB.meta.counts.momoPrice=0; }},
+  {k:'etmall', label:'東森', clear(){ DB.etmall=[]; if(DB.meta.counts) DB.meta.counts.etmall=0; }},
+  {k:'moplus', label:'mo+', clear(){ DB.moplus=[]; if(DB.meta.counts) DB.meta.counts.moplus=0; }},
+  {k:'yahoo', label:'Yahoo', clear(){ DB.yahoo=[]; if(DB.meta.counts) DB.meta.counts.yahoo=0; }},
+  {k:'a1', label:'A1 庫存', clear(){ DB.a1={}; if(DB.meta.counts) DB.meta.counts.a1=0; }},
+  {k:'a1Ship', label:'A1 出貨', clear(){ DB.a1Ship={}; if(DB.meta.counts) DB.meta.counts.a1Ship=0; }}
+];
+function sourceCount(k){
+  if(k==='a1') return Object.keys(DB.a1||{}).length;
+  if(k==='a1Ship') return Object.keys(DB.a1Ship||{}).length;
+  return (DB[k]||[]).length;
+}
+function clearSource(k){
+  const def=SRC_DEFS.find(x=>x.k===k); if(!def) return;
+  if(!sourceCount(k)){ toast(def.label+' 目前沒有資料'); return; }
+  if(!confirm('刪除「'+def.label+'」已匯入資料？刪後可重新上傳。')) return;
+  def.clear();
+  if(DB.meta.files) delete DB.meta.files[k];
+  save(); refreshAll(); toast('已刪除 '+def.label+'，可重新上傳');
+}
+function renderSources(){
+  const bar=document.getElementById('srcBar'); if(!bar) return;
+  const files=(DB.meta&&DB.meta.files)||{};
+  bar.innerHTML=SRC_DEFS.map(d=>{
+    const n=sourceCount(d.k);
+    const fn=files[d.k]||'';
+    if(!n) return `<span class="src empty">${d.label}：尚未匯入</span>`;
+    const rng=(d.k==='a1Ship')?shipFmtRange():'';
+    return `<span class="src"><b>${d.label}</b> ${n} 列${rng?` <span class="rng">${esc(rng)}</span>`:''}${fn?` <span class="fn" title="${esc(fn)}">${esc(fn)}</span>`:''}<button type="button" title="刪除後可重新上傳" data-clear-src="${d.k}">✕</button></span>`;
+  }).join('');
+  bar.querySelectorAll('[data-clear-src]').forEach(btn=>{
+    btn.onclick=()=>clearSource(btn.getAttribute('data-clear-src'));
+  });
+  syncShipRangeBar();
+}
+function renderCards(){
+  const c=DB.meta.counts||{};
+  const items=[
+    {lbl:'momo 商品列', n:c.momoGoods||DB.momoGoods.length, color:'var(--momo)'},
+    {lbl:'momo 變價列', n:c.momoPrice||DB.momoPrice.length, color:'var(--momo)'},
+    {lbl:'Yahoo 列', n:c.yahoo||DB.yahoo.length, color:'var(--yahoo)'},
+    {lbl:'mo+ 列', n:c.moplus||DB.moplus.length, color:'var(--moplus)'},
+    {lbl:'東森 列', n:c.etmall||DB.etmall.length, color:'var(--etmall)'},
+    {lbl:'A1 品號', n:c.a1||Object.keys(DB.a1||{}).length, color:'var(--accent)'},
+    {lbl:'A1 出貨品號', n:c.a1Ship||Object.keys(DB.a1Ship||{}).length, color:'var(--accent)'},
+    {lbl:'款號數', n:buildIndex().size, color:'#555'},
+    {lbl:'暫存改價', n:Object.keys(DB.drafts||{}).length, color:'#555'}
+  ];
+  document.getElementById('statCards').innerHTML=items.map(it=>`
+    <div class="card plat" style="border-top-color:${it.color}"><span class="lbl">${it.lbl}</span><b>${it.n}</b></div>
+  `).join('');
+}
+
+function fillStyleList(){
+  const idx=buildIndex();
+  const dl=document.getElementById('styleList');
+  dl.innerHTML=[...idx.keys()].sort().map(st=>`<option value="${st}">`).join('');
+}
+
+function getSort(tab){
+  if(!DB.meta) DB.meta={};
+  if(!DB.meta.sorts) DB.meta.sorts=defaultSorts();
+  return DB.meta.sorts[tab] || defaultSorts()[tab];
+}
+function setSort(tab, key, dir){
+  if(!DB.meta) DB.meta={};
+  if(!DB.meta.sorts) DB.meta.sorts=defaultSorts();
+  DB.meta.sorts[tab]={key, dir};
+  save();
+}
+function cmpStyle(a,b){
+  return String(a||'').localeCompare(String(b||''), 'zh-Hant', {numeric:true, sensitivity:'base'});
+}
+function sortRows(rows, tab){
+  const cur=getSort(tab)||{key:'style', dir:1};
+  const key=cur.key, d=cur.dir<0?-1:1;
+  return rows.slice().sort((a,b)=>{
+    let c=0;
+    if(key==='style' || key==='name') c=cmpStyle(a[key], b[key]);
+    else c=((Number(a[key])||0)-(Number(b[key])||0));
+    if(!c && key!=='style') c=cmpStyle(a.style, b.style);
+    return c*d;
+  });
+}
+function headerDefaultDir(key){
+  if(key==='shipQty') return -1;
+  if(key==='a1Qty') return 1;
+  return 1;
+}
+function renderSortBar(slotId, tab, opts, rerender){
+  const el=document.getElementById(slotId);
+  if(!el) return;
+  const cur=getSort(tab);
+  const btn=(key,dir,label)=>{
+    const act=cur && cur.key===key && cur.dir===dir;
+    return `<button type="button" class="sortbtn${act?' act':''}" data-sk="${key}" data-sd="${dir}">${label}</button>`;
+  };
+  const extra=(opts&&opts.stock)? btn('a1Qty',1,'庫存 少→多')+btn('a1Qty',-1,'庫存 多→少') : '';
+  el.innerHTML=`<div class="sortbar"><span class="muted">排序</span>
+    ${btn('style',1,'款號 小→大')}
+    ${btn('style',-1,'款號 大→小')}
+    ${btn('shipQty',-1,'出貨量 多→少')}
+    ${btn('shipQty',1,'出貨量 少→多')}
+    ${extra}
+  </div>`;
+  el.querySelectorAll('button[data-sk]').forEach(b=>{
+    b.onclick=()=>{ setSort(tab, b.getAttribute('data-sk'), Number(b.getAttribute('data-sd'))); rerender(); };
+  });
+}
+function bindHeaderSort(thead, tab, rerender){
+  const cur=getSort(tab);
+  thead.querySelectorAll('th[data-k]').forEach(th=>{
+    const k=th.dataset.k;
+    th.classList.remove('sort-asc','sort-desc');
+    if(cur && cur.key===k) th.classList.add(cur.dir<0?'sort-desc':'sort-asc');
+    th.onclick=()=>{
+      const now=getSort(tab);
+      if(now && now.key===k) setSort(tab, k, now.dir*-1);
+      else setSort(tab, k, headerDefaultDir(k));
+      rerender();
+    };
+  });
+}
+function syncShipRangeBar(){
+  const bar=document.getElementById('shipRangeBar');
+  if(!bar) return;
+  const meta=shipDateRange();
+  const show=meta.hasDates && !meta.same;
+  bar.style.display=show?'flex':'none';
+  const cur=(DB.meta&&DB.meta.shipRange)||'all';
+  bar.querySelectorAll('input[name="shipRange"]').forEach(inp=>{
+    inp.checked=inp.value===cur;
+  });
+  const hint=document.getElementById('shipRangeHint');
+  if(hint) hint.textContent=meta.hasDates?('資料期間 '+shipFmtRange()):'';
+}
+
+function renderOverview(){
+  const idx=buildIndex();
+  const q=s(document.getElementById('qSearch').value).toLowerCase();
+  const diffTh=num(document.getElementById('diffTh').value)||0;
+  const stockTh=num(document.getElementById('stockTh').value);
+  const fMiss=document.getElementById('fMiss').checked;
+  const fDiff=document.getElementById('fDiff').checked;
+  const fLow=document.getElementById('fLow').checked;
+
+  let rows=[...idx.values()];
+  rows=rows.filter(o=>{
+    const prices=[platPrice(o.momo),platPrice(o.yahoo),platPrice(o.moplus),platPrice(o.etmall)];
+    const miss=PLATS.filter(p=>!o[p.k].length).map(p=>p.name);
+    const spread=priceSpread(prices);
+    const low=o.a1Qty!=null && stockTh!=null && o.a1Qty<=stockTh;
+    if(fMiss && !miss.length) return false;
+    if(fDiff && spread<=diffTh) return false;
+    if(fLow && !low) return false;
+    if(q){
+      const blob=[o.style,o.name,
+        ...platIds(o.momo,'momo'),...platIds(o.yahoo,'yahoo'),
+        ...platIds(o.moplus,'moplus'),...platIds(o.etmall,'etmall')
+      ].join(' ').toLowerCase();
+      if(!blob.includes(q)) return false;
+    }
+    return true;
+  });
+
+  rows=sortRows(rows,'overview');
+  renderSortBar('sort-overview','overview',{stock:true},renderOverview);
+
+  document.getElementById('overviewCount').textContent=`顯示 ${rows.length} / ${idx.size} 款`;
+  const thead=document.querySelector('#tblOverview thead');
+  thead.innerHTML=`<tr>
+    <th data-k="style">款號</th><th>品名</th><th data-k="shipQty">出貨量</th><th data-k="a1Qty">A1庫存</th>
+    <th>momo</th><th>Yahoo</th><th>mo+</th><th>東森</th><th>狀態</th>
+  </tr>`;
+  bindHeaderSort(thead,'overview',renderOverview);
+  const tb=document.querySelector('#tblOverview tbody');
+  tb.innerHTML=rows.map(o=>{
+    const prices=[platPrice(o.momo),platPrice(o.yahoo),platPrice(o.moplus),platPrice(o.etmall)];
+    const miss=PLATS.filter(p=>!o[p.k].length);
+    const spread=priceSpread(prices);
+    const tags=[];
+    if(miss.length) tags.push(`<span class="tag miss">缺 ${miss.map(p=>p.name).join(',')}</span>`);
+    if(spread>diffTh) tags.push(`<span class="tag diff">價差 ${spread}</span>`);
+    if(o.a1Qty!=null && stockTh!=null && o.a1Qty<=stockTh) tags.push(`<span class="tag low">庫存緊張 ${o.a1Qty}</span>`);
+    if(!tags.length) tags.push(`<span class="tag ok">OK</span>`);
+    const cell=(plat,list,cls)=>{
+      const p=platPrice(list);
+      const ids=platIds(list,plat).slice(0,3).join(', ');
+      if(!list.length) return `<td class="${cls}"><span class="muted">—</span></td>`;
+      return `<td class="${cls}"><span class="pill p-${plat}">${p!=null?p:'?'}</span><div class="ids">${ids}</div></td>`;
+    };
+    return `<tr>
+      <td><b>${o.style}</b></td>
+      <td>${esc(o.name).slice(0,40)}</td>
+      <td class="n">${o.shipQty||0}</td>
+      <td class="n">${o.a1Qty==null?'—':o.a1Qty}</td>
+      ${cell('momo',o.momo,'plat-col-momo')}
+      ${cell('yahoo',o.yahoo,'plat-col-yahoo')}
+      ${cell('moplus',o.moplus,'plat-col-moplus')}
+      ${cell('etmall',o.etmall,'plat-col-etmall')}
+      <td>${tags.join(' ')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(t){
+  return String(t||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderIds(){
+  const q=s(document.getElementById('idSearch').value).toLowerCase();
+  const idx=buildIndex();
+  let rows=[...idx.values()];
+  if(q){
+    rows=rows.filter(o=>{
+      const blob=[o.style,o.name,
+        ...o.momo.flatMap(x=>[x.goodsId,x.sku,x.spec]),
+        ...o.yahoo.flatMap(x=>[x.storeId,x.goodsId,x.sku,x.spec]),
+        ...o.moplus.flatMap(x=>[x.goodsId,x.sku,x.spec1]),
+        ...o.etmall.flatMap(x=>[x.goodsId,x.webId,x.saleId,x.sku])
+      ].join(' ').toLowerCase();
+      return blob.includes(q);
+    });
+  }
+  rows=sortRows(rows,'ids');
+  renderSortBar('sort-ids','ids',{stock:true},renderIds);
+  const thead=document.querySelector('#tblIds thead');
+  thead.innerHTML=`<tr>
+    <th data-k="style">款號</th><th>品名</th><th data-k="shipQty">出貨量</th><th>momo 商品編號 / 料號</th><th>Yahoo 賣場／序號 / 料號</th><th>mo+ 商品編號 / 料號</th><th>東森 網站／銷售／商品 / 料號</th>
+  </tr>`;
+  bindHeaderSort(thead,'ids',renderIds);
+  document.querySelector('#tblIds tbody').innerHTML=rows.slice(0,500).map(o=>`<tr>
+    <td><b>${o.style}</b></td><td>${esc(o.name).slice(0,36)}</td>
+    <td class="n">${o.shipQty||0}</td>
+    <td class="ids">${o.momo.map(x=>`${x.goodsId}｜${x.sku} ${x.spec||''}`).join('<br>')||'—'}</td>
+    <td class="ids">${o.yahoo.map(x=>`${x.storeId}/${x.goodsId}｜${x.sku} ${x.spec||''}`).join('<br>')||'—'}</td>
+    <td class="ids">${o.moplus.map(x=>`${x.goodsId}｜${x.sku} ${x.spec1||''}`).join('<br>')||'—'}</td>
+    <td class="ids">${o.etmall.map(x=>`${x.webId||''}/${x.saleId||''}/${x.goodsId}｜${x.sku}`).join('<br>')||'—'}</td>
+  </tr>`).join('') || `<tr><td colspan="7" class="muted">無資料</td></tr>`;
+}
+
+function marginPreview(price, plat){
+  if(price==null) return null;
+  if(plat==='yahoo') return {cost:Math.round(price*0.85), note:'售價×0.85'};
+  // momo / etmall / moplus use same display ref
+  return {cost:Math.round(price*0.85*0.88), note:'售價×0.85×0.88'};
+}
+
+function selectedStylesFromPriceUI(){
+  const one=s(document.getElementById('priceStyle').value).toUpperCase();
+  const many=document.getElementById('priceList').value.split(/[\s,;]+/).map(x=>x.trim().toUpperCase()).filter(Boolean);
+  const set=new Set();
+  if(one) set.add(styleCode(one)||one);
+  many.forEach(x=>set.add(styleCode(x)||x));
+  return [...set];
+}
+
+function renderPriceTable(styles){
+  const idx=buildIndex();
+  const target=num(document.getElementById('targetPrice').value);
+  const rows=styles.map(st=>idx.get(st)).filter(Boolean);
+  const prev=document.getElementById('pricePreview');
+  if(!rows.length){
+    prev.innerHTML='找不到款號，請先匯入各平台資料。';
+    document.querySelector('#tblPrice tbody').innerHTML='';
+    return;
+  }
+  if(target!=null){
+    prev.innerHTML=PLATS.map(p=>{
+      const m=marginPreview(target,p.k);
+      return `<div><span class="pill p-${p.k}">${p.name}</span> 目標 ${target} → 參考成本 <b>${m.cost}</b> <span class="muted">(${m.note})</span></div>`;
+    }).join('');
+  } else prev.innerHTML='輸入目標售價可預覽參考成本（不自動改進價）。';
+
+  rows=sortRows(rows,'price');
+  renderSortBar('sort-price','price',{stock:true},()=>renderPriceTable(selectedStylesFromPriceUI()));
+  const thead=document.querySelector('#tblPrice thead');
+  thead.innerHTML=`<tr>
+    <th data-k="style">款號</th><th>品名</th><th data-k="shipQty">出貨量</th><th>momo</th><th>Yahoo</th><th>mo+</th><th>東森</th><th>暫存目標</th>
+  </tr>`;
+  bindHeaderSort(thead,'price',()=>renderPriceTable(selectedStylesFromPriceUI()));
+  document.querySelector('#tblPrice tbody').innerHTML=rows.map(o=>{
+    const d=DB.drafts[o.style];
+    const cell=(plat,list)=> list.length? `<span class="pill p-${plat}">${platPrice(list)??'?'}</span><div class="ids">${list.length} SKU</div>` : '—';
+    return `<tr>
+      <td><b>${o.style}</b></td><td>${esc(o.name).slice(0,36)}</td>
+      <td class="n">${o.shipQty||0}</td>
+      <td>${cell('momo',o.momo)}</td><td>${cell('yahoo',o.yahoo)}</td>
+      <td>${cell('moplus',o.moplus)}</td><td>${cell('etmall',o.etmall)}</td>
+      <td>${d?`<b>${d.price}</b> → ${(d.plats||[]).join(',')}`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStock(){
+  const th=num(document.getElementById('stockTh2').value);
+  document.getElementById('stockTh').value=th;
+  const idx=buildIndex();
+  let rows=[...idx.values()].filter(o=>o.a1Qty!=null || o.shipQty || o.momo.length || o.yahoo.length);
+  rows=sortRows(rows,'stock');
+  renderSortBar('sort-stock','stock',{stock:true},renderStock);
+  const thead=document.querySelector('#tblStock thead');
+  thead.innerHTML=`<tr>
+    <th data-k="style">款號</th><th>品名</th><th data-k="shipQty">出貨量</th><th data-k="a1Qty">A1庫存</th><th>momo可接單</th><th>Yahoo可售</th><th>關掉數量</th><th>狀態</th>
+  </tr>`;
+  bindHeaderSort(thead,'stock',renderStock);
+  document.querySelector('#tblStock tbody').innerHTML=rows.map(o=>{
+    const cq=DB.closeQty[o.style]||{};
+    const low=o.a1Qty!=null && th!=null && o.a1Qty<=th;
+    const checks=PLATS.map(p=>`
+      <label class="inline"><input type="checkbox" data-close="${o.style}" data-plat="${p.k}" ${cq[p.k]?'checked':''} ${o[p.k].length?'':'disabled'}/> ${p.name}</label>
+    `).join(' ');
+    return `<tr>
+      <td><b>${o.style}</b></td><td>${esc(o.name).slice(0,36)}</td>
+      <td class="n">${o.shipQty||0}</td>
+      <td class="n">${o.a1Qty==null?'—':o.a1Qty}</td>
+      <td class="n">${platQty(o.momo)??'—'}</td>
+      <td class="n">${platQty(o.yahoo)??'—'}</td>
+      <td>${checks}</td>
+      <td>${low?'<span class="tag low">緊張</span>':'<span class="tag ok">—</span>'}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="8" class="muted">請先匯入 A1 或平台資料</td></tr>`;
+
+  document.querySelectorAll('input[data-close]').forEach(inp=>{
+    inp.onchange=()=>{
+      const st=inp.getAttribute('data-close');
+      const plat=inp.getAttribute('data-plat');
+      if(!DB.closeQty[st]) DB.closeQty[st]={};
+      DB.closeQty[st][plat]=inp.checked;
+      save();
+    };
+  });
+}
+
+function renderMissing(){
+  const want={
+    momo:document.getElementById('missMomo').checked,
+    yahoo:document.getElementById('missYahoo').checked,
+    moplus:document.getElementById('missMoplus').checked,
+    etmall:document.getElementById('missEtmall').checked
+  };
+  const idx=buildIndex();
+  let rows=[...idx.values()].filter(o=>{
+    return PLATS.some(p=>want[p.k] && !o[p.k].length);
+  });
+  rows=sortRows(rows,'missing');
+  renderSortBar('sort-missing','missing',{stock:true},renderMissing);
+  const thead=document.querySelector('#tblMissing thead');
+  thead.innerHTML=`<tr>
+    <th data-k="style">款號</th><th>品名</th><th data-k="shipQty">出貨量</th><th data-k="a1Qty">A1庫存</th><th>已上架</th><th>缺平台</th>
+  </tr>`;
+  bindHeaderSort(thead,'missing',renderMissing);
+  document.querySelector('#tblMissing tbody').innerHTML=rows.map(o=>{
+    const on=PLATS.filter(p=>o[p.k].length).map(p=>`<span class="pill p-${p.k}">${p.name}</span>`).join(' ');
+    const miss=PLATS.filter(p=>!o[p.k].length).map(p=>`<span class="tag miss">${p.name}</span>`).join(' ');
+    return `<tr><td><b>${o.style}</b></td><td>${esc(o.name).slice(0,40)}</td>
+      <td class="n">${o.shipQty||0}</td>
+      <td class="n">${o.a1Qty??'—'}</td><td>${on||'—'}</td><td>${miss}</td></tr>`;
+  }).join('') || `<tr><td colspan="6" class="muted">沒有缺上架（或尚未匯入）</td></tr>`;
+}
+
+function refreshAll(){
+  renderSources();
+  renderCards();
+  fillStyleList();
+  renderOverview();
+  renderIds();
+  renderStock();
+  renderMissing();
+  const st=selectedStylesFromPriceUI();
+  if(st.length) renderPriceTable(st);
+}
+
+/* ---------- import handlers ---------- */
+async function handleImport(kind, file){
+  try{
+    const wb=await readSheet(file);
+    let parsed;
+    if(kind==='momoGoods'){
+      parsed=sheetToRows(wb);
+      DB.momoGoods=parseMomoGoods(parsed.rows);
+      DB.meta.counts.momoGoods=DB.momoGoods.length;
+      toast(`momo 商品 ${DB.momoGoods.length} 列（${parsed.sheet}）`);
+    } else if(kind==='momoPrice'){
+      parsed=sheetToRows(wb,['價格資料異動']);
+      DB.momoPrice=parseMomoPrice(parsed.rows);
+      DB.meta.counts.momoPrice=DB.momoPrice.length;
+      toast(`momo 變價 ${DB.momoPrice.length} 列`);
+      if(!DB.momoGoods.length) toast('提醒：還要匯入「momo 商品」才能對上款號／判斷缺上架');
+    } else if(kind==='etmall'){
+      parsed=sheetToRows(wb,['商品變價']);
+      let et=parseEtmall(parsed.rows);
+      const stripped=stripEtmallAmber(et);
+      DB.etmall=stripped.kept;
+      DB.meta.counts.etmall=DB.etmall.length;
+      if(stripped.removed.length) toast(`東森 ${DB.etmall.length} 列（已自動刪除 AMBER ${stripped.removed.length} 列）`);
+      else toast(`東森 ${DB.etmall.length} 列`);
+    } else if(kind==='moplus'){
+      parsed=sheetToRows(wb,['匯出商品價格資料']);
+      // mo+ header may be row after title — sheetToRows already finds first rich row; if first row is title, second is header
+      // Re-parse carefully if columns look wrong
+      if(!parsed.header.includes('商品編號') && parsed.rows.length){
+        // force header row 1 (0-index)
+        const aoa=XLSX.utils.sheet_to_json(wb.Sheets[parsed.sheet],{header:1,defval:null,raw:false});
+        const header=(aoa[1]||[]).map(x=>s(x));
+        const rows=[];
+        for(let r=2;r<aoa.length;r++){
+          const raw=aoa[r]||[];
+          if(raw.every(x=>x==null||String(x).trim()==='')) continue;
+          const obj={}; header.forEach((h,i)=>{if(h)obj[h]=raw[i];}); rows.push(obj);
+        }
+        parsed={sheet:parsed.sheet, header, rows};
+      }
+      DB.moplus=parseMoplus(parsed.rows);
+      DB.meta.counts.moplus=DB.moplus.length;
+      toast(`mo+ ${DB.moplus.length} 列`);
+    } else if(kind==='yahoo'){
+      parsed=sheetToRows(wb);
+      DB.yahoo=parseYahoo(parsed.rows);
+      DB.meta.counts.yahoo=DB.yahoo.length;
+      toast(`Yahoo ${DB.yahoo.length} 列`);
+    } else if(kind==='a1'){
+      parsed=sheetToRows(wb);
+      DB.a1=parseA1(parsed.rows);
+      DB.meta.counts.a1=Object.keys(DB.a1).length;
+      toast(`A1 庫存 ${DB.meta.counts.a1} 個品號（同品號已合併）`);
+    } else if(kind==='a1Ship'){
+      parsed=sheetToRows(wb,['商品銷售排名表']);
+      const fileDate=inferFileDate(file.name, parsed.sheet);
+      DB.a1Ship=parseA1Ship(parsed.rows, fileDate);
+      const n=Object.keys(DB.a1Ship).length;
+      DB.meta.counts.a1Ship=n;
+      const total=Object.values(DB.a1Ship).reduce((s,x)=>s+(x.qty||0),0);
+      const rng=shipFmtRange();
+      if(!n) toast('沒有讀到出貨列，請用鼎新 A1「商品銷售排名表」（品號、數量），不要用出退貨分析或銷貨單');
+      else toast(`A1 出貨 ${n} 個品號，合計 ${total} 件`+(rng?`（${rng}）`:''));
+    }
+    DB.meta.loadedAt=new Date().toISOString();
+    if(!DB.meta.files) DB.meta.files={};
+    if(kind) DB.meta.files[kind]=file.name;
+    save();
+    refreshAll();
+  }catch(e){
+    console.error(e);
+    toast('匯入失敗：'+e.message);
+  }
+}
+
+document.querySelectorAll('input[data-imp]').forEach(inp=>{
+  inp.addEventListener('change',()=>{
+    const f=inp.files&&inp.files[0];
+    if(!f) return;
+    handleImport(inp.getAttribute('data-imp'), f);
+    inp.value='';
+  });
+});
+
+document.getElementById('impJson').addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  try{
+    const text=await f.text();
+    DB=Object.assign(emptyDB(), JSON.parse(text));
+    recomputeStyles();
+    save(); refreshAll(); toast('已匯入 workspace JSON');
+  }catch(err){ toast('JSON 無效'); }
+  e.target.value='';
+});
+
+document.getElementById('btnExportJson').onclick=()=>{
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  downloadBlob(blob, `price_stock_workspace_${dateStamp()}.json`);
+};
+
+document.getElementById('btnStripAmber').onclick=()=>{
+  const {kept, removed}=stripEtmallAmber(DB.etmall);
+  if(!removed.length){ toast('東森沒有 AMBER 品名'); return; }
+  if(!confirm('將刪除東森品名以 AMBER 開頭的 '+removed.length+' 列，確定？')) return;
+  DB.etmall=kept;
+  DB.meta.counts.etmall=kept.length;
+  save(); refreshAll();
+  toast('已刪除東森 AMBER '+removed.length+' 列，剩 '+kept.length+' 列');
+};
+document.getElementById('btnClear').onclick=()=>{
+  if(!confirm('確定清空本機所有匯入與暫存？')) return;
+  DB=emptyDB(); save(); refreshAll(); toast('已清空');
+};
+
+document.getElementById('btnDemo').onclick=()=>{
+  // synthetic demo so UI can be tried offline
+  DB=emptyDB();
+  DB.momoGoods=[
+    {plat:'momo',goodsId:'15879329',skuId:'001',name:'【Amore】SET2 秋冬多款氣質長裙任選',sku:'M638A01',style:'M638',spec:'黑色 F',cost:320,price:499,market:899,qty:0,status:'暫時中斷'},
+    {plat:'momo',goodsId:'15879329',skuId:'002',name:'【Amore】SET2 秋冬多款氣質長裙任選',sku:'M638C01',style:'M638',spec:'咖啡色 F',cost:320,price:499,market:899,qty:2,status:'暫時中斷'},
+    {plat:'momo',goodsId:'15875657',skuId:'001',name:'【Amore】秋冬美式彎刀寬褲',sku:'M640A01',style:'M640',spec:'黑色 F',cost:450,price:602,market:899,qty:12,status:'販售中'}
+  ];
+  DB.yahoo=[
+    {plat:'yahoo',storeId:'12321210',goodsId:'41199592',name:'直條紋長袖襯衫',suggest:899,price:499,sku:'M649A01',style:'M649',spec:'色系 / 咖啡色',cost:424,qty:3,status:'正常'},
+    {plat:'yahoo',storeId:'12330001',goodsId:'41199001',name:'氣質長裙',suggest:899,price:520,sku:'M638A01',style:'M638',spec:'色系 / 黑色',cost:440,qty:1,status:'正常'}
+  ];
+  DB.moplus=[
+    {plat:'moplus',goodsId:'TP00052310000001',skuId:'001',name:'【AMONE】百搭輕柔舒適飄逸氣質亞麻裙',spec1:'亞麻裙-黑色',spec2:'無',sku:'M125A01',style:'M125',price:502,market:899}
+  ];
+  DB.etmall=[
+    {plat:'etmall',saleId:'8022390',webId:'s14250538',goodsId:'8033871',sku:'M651A01',style:'M651',name:'AM艾莫兒 撞色條紋大學T',market:899,price:527,cost:394}
+  ];
+  DB.momoPrice=[
+    {plat:'momo',goodsId:'15879329',name:'【Amore】SET2 秋冬多款氣質長裙任選',cost:320,costUntax:305,price:499,market:899,md:'demo',planner:'demo'}
+  ];
+  DB.a1={
+    'M638A01':{code:'M638A01',name:'長裙-黑',unit:'件',qty:5},
+    'M638C01':{code:'M638C01',name:'長裙-咖',unit:'件',qty:3},
+    'M640A01':{code:'M640A01',name:'彎刀寬褲',unit:'件',qty:40},
+    'M649A01':{code:'M649A01',name:'直條紋襯衫',unit:'件',qty:8},
+    'M125A01':{code:'M125A01',name:'亞麻裙',unit:'件',qty:2},
+    'M651A01':{code:'M651A01',name:'條紋大學T',unit:'件',qty:15},
+    'M72C01':{code:'M72C01',name:'示範C',unit:'件',qty:4},
+    'M72D01':{code:'M72D01',name:'示範D',unit:'件',qty:3}
+  };
+  DB.a1Ship={
+    'M638A01':{code:'M638A01',name:'長裙-黑',qty:18,dates:{'2026-11-01':10,'2026-11-08':8}},
+    'M638C01':{code:'M638C01',name:'長裙-咖',qty:9,dates:{'2026-11-01':5,'2026-11-08':4}},
+    'M640A01':{code:'M640A01',name:'彎刀寬褲',qty:40,dates:{'2026-11-01':22,'2026-11-08':18}},
+    'M649A01':{code:'M649A01',name:'直條紋襯衫',qty:6,dates:{'2026-11-08':6}},
+    'M72C01':{code:'M72C01',name:'示範C',qty:12,dates:{'2026-11-01':7,'2026-11-08':5}},
+    'M72D01':{code:'M72D01',name:'示範D',qty:8,dates:{'2026-11-01':3,'2026-11-08':5}}
+  };
+  DB.momoGoods.push(
+    {plat:'momo',goodsId:'10000072',skuId:'001',name:'示範 M72C',sku:'M72C01',style:'M72',spec:'C',cost:100,price:299,market:599,qty:2,status:'販售中'},
+    {plat:'momo',goodsId:'10000072',skuId:'002',name:'示範 M72D',sku:'M72D01',style:'M72',spec:'D',cost:100,price:299,market:599,qty:1,status:'販售中'}
+  );
+  DB.meta.counts={momoGoods:DB.momoGoods.length,momoPrice:1,yahoo:2,moplus:1,etmall:1,a1:Object.keys(DB.a1).length,a1Ship:Object.keys(DB.a1Ship).length};
+  DB.meta.loadedAt=new Date().toISOString();
+  DB.meta.files={a1Ship:'示範'};
+  recomputeStyles();
+  save(); refreshAll(); toast('已載入示範資料');
+};
+
+/* tabs */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('act'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('act'));
+    btn.classList.add('act');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('act');
+    if(btn.dataset.tab==='stock') renderStock();
+    if(btn.dataset.tab==='missing') renderMissing();
+    if(btn.dataset.tab==='ids') renderIds();
+    if(btn.dataset.tab==='overview') renderOverview();
+  };
+});
+
+['qSearch','diffTh','stockTh','fMiss','fDiff','fLow'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>renderOverview());
+  document.getElementById(id).addEventListener('change',()=>renderOverview());
+});
+document.getElementById('idSearch').addEventListener('input',renderIds);
+['missMomo','missYahoo','missMoplus','missEtmall'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',renderMissing);
+});
+document.getElementById('stockTh2').addEventListener('change',()=>{
+  document.getElementById('stockTh').value=document.getElementById('stockTh2').value;
+  renderStock(); renderOverview();
+});
+document.querySelectorAll('input[name="shipRange"]').forEach(inp=>{
+  inp.addEventListener('change',()=>{
+    if(!inp.checked) return;
+    if(!DB.meta) DB.meta={};
+    DB.meta.shipRange=inp.value;
+    save(); refreshAll();
+  });
+});
+
+document.getElementById('btnLoadPrice').onclick=()=>{
+  const st=selectedStylesFromPriceUI();
+  if(!st.length){ toast('請輸入款號'); return; }
+  renderPriceTable(st);
+};
+document.getElementById('btnApplyPrice').onclick=()=>{
+  const st=selectedStylesFromPriceUI();
+  const price=num(document.getElementById('targetPrice').value);
+  if(!st.length || price==null){ toast('需要款號與目標售價'); return; }
+  const plats=[...document.querySelectorAll('.platApply:checked')].map(x=>x.value);
+  if(!plats.length){ toast('至少選一個平台'); return; }
+  const alsoMarket=document.getElementById('alsoMarket').checked;
+  const chgCost=document.getElementById('chgCost').checked;
+  const market=alsoMarket? Math.round(price*1.8) : null;
+  st.forEach(style=>{
+    DB.drafts[style]={price, market, plats:[...plats], chgCost, at:new Date().toISOString()};
+  });
+  save(); renderPriceTable(st); renderCards(); toast(`已暫存 ${st.length} 款改價`);
+};
+document.getElementById('btnClearDraft').onclick=()=>{
+  DB.drafts={}; save(); refreshAll(); toast('已清除暫存改價');
+};
+
+/* ---------- exports ---------- */
+function downloadBlob(blob, filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function dateStamp(){
+  const d=new Date();
+  const z=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'_'+z(d.getHours())+z(d.getMinutes());
+}
+function aoaToXlsx(aoa, sheetName, filename){
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0,31));
+  XLSX.writeFile(wb, filename);
+}
+
+function draftItems(){
+  const idx=buildIndex();
+  const out=[];
+  Object.entries(DB.drafts||{}).forEach(([style,d])=>{
+    const o=idx.get(style);
+    if(!o) return;
+    out.push({style, d, o});
+  });
+  return out;
+}
+
+document.getElementById('exMomo').onclick=()=>{
+  const items=draftItems().filter(x=>x.d.plats.includes('momo'));
+  if(!items.length){ toast('沒有 momo 暫存改價'); return; }
+  // Prefer matching momoPrice rows by goodsId from goods
+  const header=['商品編號','商品名稱','生效日期','進價','進價(未稅)','售價','市價','毛利率(%)','備註','負責MD聯絡資訊','負責企劃聯絡資訊'];
+  const aoa=[header];
+  const eff=todayStr();
+  const seen=new Set();
+  items.forEach(({d,o})=>{
+    const goodsIds=[...new Set(o.momo.map(x=>x.goodsId))];
+    goodsIds.forEach(gid=>{
+      if(seen.has(gid)) return; seen.add(gid);
+      const fromPrice=DB.momoPrice.find(x=>x.goodsId===gid);
+      const fromGoods=o.momo.find(x=>x.goodsId===gid);
+      let cost=fromPrice?fromPrice.cost:(fromGoods&&fromGoods.cost);
+      let costUntax=fromPrice?fromPrice.costUntax:null;
+      if(d.chgCost){
+        const m=marginPreview(d.price,'momo');
+        cost=m.cost;
+        costUntax=Math.round(cost/1.05);
+      }
+      const market=d.market!=null?d.market:(fromPrice?fromPrice.market:(fromGoods&&fromGoods.market));
+      aoa.push([
+        gid,
+        (fromPrice&&fromPrice.name)||(fromGoods&&fromGoods.name)||o.name,
+        eff,
+        cost, costUntax,
+        d.price, market,
+        fromPrice?fromPrice.margin:'',
+        '跨平台統一價',
+        (fromPrice&&fromPrice.md)||'',
+        (fromPrice&&fromPrice.planner)||''
+      ]);
+    });
+  });
+  aoaToXlsx(aoa,'價格資料異動',`momo_批次變價_${dateStamp()}.xlsx`);
+  toast(`已匯出 momo ${aoa.length-1} 列`);
+};
+
+document.getElementById('exEtmall').onclick=()=>{
+  const items=draftItems().filter(x=>x.d.plats.includes('etmall'));
+  if(!items.length){ toast('沒有東森暫存改價'); return; }
+  const header=['變價活動','開始日期','結束日期','帶狀週期','帶狀時間','銷售編號','網站編號','商品編號','廠商料號','國際條碼','商品名稱','市價','售價','成本價','毛利率','毛利額','修改後市價','修改後售價','修改後成本價','失敗訊息'];
+  const aoa=[header];
+  items.forEach(({d,o})=>{
+    o.etmall.forEach(row=>{
+      let newCost='';
+      if(d.chgCost) newCost=marginPreview(d.price,'etmall').cost;
+      aoa.push([
+        '','','','','',
+        row.saleId, row.webId, row.goodsId, row.sku, '',
+        row.name, row.market, row.price, row.cost, row.margin, '',
+        d.market!=null?d.market:'', d.price, newCost, ''
+      ]);
+    });
+  });
+  aoaToXlsx(aoa,'商品變價',`東森_商品變價_${dateStamp()}.xlsx`);
+  toast(`已匯出東森 ${aoa.length-1} 列`);
+};
+
+document.getElementById('exMoplus').onclick=()=>{
+  const items=draftItems().filter(x=>x.d.plats.includes('moplus'));
+  if(!items.length){ toast('沒有 mo+ 暫存改價'); return; }
+  const aoa=[
+    ['*黃底為可申請異動之項目'],
+    ['商品編號','商品名稱','單品編號','規格一','規格二','商品原廠編號','生效日期','售價','市價']
+  ];
+  const eff=todayStr();
+  items.forEach(({d,o})=>{
+    o.moplus.forEach(row=>{
+      aoa.push([
+        row.goodsId, row.name, row.skuId, row.spec1, row.spec2, row.sku,
+        eff, d.price, d.market!=null?d.market:row.market
+      ]);
+    });
+  });
+  aoaToXlsx(aoa,'匯出商品價格資料',`moplus_變價_${dateStamp()}.xlsx`);
+  toast(`已匯出 mo+ ${aoa.length-2} 列`);
+};
+
+document.getElementById('exYahoo').onclick=()=>{
+  const items=draftItems().filter(x=>x.d.plats.includes('yahoo'));
+  if(!items.length){ toast('沒有 Yahoo 暫存改價'); return; }
+  const header=['賣場編號','商品序號','供應商料號','目前售價','修改後售價','可售數量','修改後可售數量','備註'];
+  const aoa=[header];
+  items.forEach(({d,o})=>{
+    const cq=DB.closeQty[o.style]||{};
+    o.yahoo.forEach(row=>{
+      // prefer SKU-level rows (有供應商料號長度>4 or 有配件)
+      if(!row.sku) return;
+      const newQty=cq.yahoo?0:'';
+      aoa.push([row.storeId, row.goodsId, row.sku, row.price, d.price, row.qty, newQty, 'v1簡易格式｜官方模板待補']);
+    });
+  });
+  aoaToXlsx(aoa,'Yahoo簡易變價',`yahoo_簡易變價_${dateStamp()}.xlsx`);
+  toast(`已匯出 Yahoo 簡易 ${aoa.length-1} 列（官方模板待補）`);
+};
+
+function toCSV(aoa){
+  return aoa.map(r=>r.map(c=>{
+    const t=c==null?'':String(c);
+    if(/[",\n]/.test(t)) return '"'+t.replace(/"/g,'""')+'"';
+    return t;
+  }).join(',')).join('\n');
+}
+
+document.getElementById('exOverview').onclick=()=>{
+  const idx=buildIndex();
+  const aoa=[['款號','品名','出貨量','A1庫存','momo售價','momo編號','Yahoo售價','Yahoo編號','mo+售價','mo+編號','東森售價','東森編號','缺平台']];
+  sortRows([...idx.values()],'overview').forEach(o=>{
+    const miss=PLATS.filter(p=>!o[p.k].length).map(p=>p.name).join('|');
+    aoa.push([
+      o.style,o.name,o.shipQty||0,o.a1Qty??'',
+      platPrice(o.momo)??'', platIds(o.momo,'momo').join('|'),
+      platPrice(o.yahoo)??'', platIds(o.yahoo,'yahoo').join('|'),
+      platPrice(o.moplus)??'', platIds(o.moplus,'moplus').join('|'),
+      platPrice(o.etmall)??'', platIds(o.etmall,'etmall').join('|'),
+      miss
+    ]);
+  });
+  downloadBlob(new Blob(['\ufeff'+toCSV(aoa)],{type:'text/csv;charset=utf-8'}),'總覽_'+dateStamp()+'.csv');
+};
+
+document.getElementById('exMissing').onclick=()=>{
+  const idx=buildIndex();
+  const aoa=[['款號','品名','出貨量','A1庫存','缺平台','已上架']];
+  sortRows([...idx.values()].filter(o=>PLATS.some(p=>!o[p.k].length)),'missing').forEach(o=>{
+    const miss=PLATS.filter(p=>!o[p.k].length).map(p=>p.name);
+    aoa.push([o.style,o.name,o.shipQty||0,o.a1Qty??'',miss.join('|'),PLATS.filter(p=>o[p.k].length).map(p=>p.name).join('|')]);
+  });
+  downloadBlob(new Blob(['\ufeff'+toCSV(aoa)],{type:'text/csv;charset=utf-8'}),'缺上架_'+dateStamp()+'.csv');
+};
+
+document.getElementById('btnExportStockHint').onclick=()=>{
+  const idx=buildIndex();
+  const aoa=[['款號','品名','出貨量','A1庫存','平台','建議可售數量','原數量備註']];
+  Object.entries(DB.closeQty||{}).forEach(([style,flags])=>{
+    const o=idx.get(style); if(!o) return;
+    PLATS.forEach(p=>{
+      if(!flags[p.k]) return;
+      let note='';
+      if(p.k==='momo') note='可接單量原 '+ (platQty(o.momo)??'?');
+      if(p.k==='yahoo') note='可售數量原 '+ (platQty(o.yahoo)??'?');
+      aoa.push([style,o.name,o.shipQty||0,o.a1Qty??'',p.name,0,note+'｜正式後台庫存模板待補']);
+    });
+  });
+  if(aoa.length===1){ toast('尚未勾選關掉數量'); return; }
+  downloadBlob(new Blob(['\ufeff'+toCSV(aoa)],{type:'text/csv;charset=utf-8'}),'關閉數量提示_'+dateStamp()+'.csv');
+  toast('已匯出關閉數量提示');
+};
+
+// init — 從 IndexedDB 載入，重新整理不消失
+window.__PSM={get DB(){return DB;}, set DB(v){DB=v;}, buildIndex, refreshAll, save, loadLS, loadPersisted, flushSave, styleCode, parseA1, parseA1Ship, parseDate, inferFileDate, findColKey, recomputeStyles, sortRows, shipDateRange};
+(async function init(){
+  toast('載入暫存中…');
+  const src=await loadPersisted();
+  refreshAll();
+  if(src) toast('已還原上次匯入的資料');
+  else {
+    const t=document.getElementById('toast');
+    t.classList.remove('show');
+  }
+})();
+})();
+</script>
+</body>
+</html>

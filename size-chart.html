@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>尺寸表產生器</title>
+<style>
+:root{--bg:#f3f2f0;--ink:#3b2a22;--gray:#e8e6e2;--beige:#d9cfc7;}
+*{box-sizing:border-box}
+body{margin:0;font-family:"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif;background:#faf9f7;color:var(--ink)}
+header{padding:14px 22px;background:var(--ink);color:#f3f2f0;font-size:20px;font-weight:600}
+.wrap{display:flex;gap:22px;padding:18px 22px;flex-wrap:wrap;align-items:flex-start}
+.panel{flex:1 1 460px;max-width:620px;background:#fff;border:1px solid #e3ded8;border-radius:12px;padding:16px 18px}
+.preview{flex:0 1 620px}
+.preview canvas{width:100%;max-width:620px;border:1px solid #ddd6cf;border-radius:8px;display:block;background:var(--bg)}
+h3{margin:16px 0 8px;font-size:15px;border-left:4px solid var(--ink);padding-left:8px}
+h3:first-child{margin-top:0}
+label{font-size:14px}
+input[type=text],select,textarea{font:inherit;font-size:14px;padding:6px 8px;border:1px solid #cfc7bf;border-radius:6px;background:#fff;color:var(--ink)}
+select{min-width:160px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.grid{border-collapse:collapse;width:100%}
+.grid td{padding:3px}
+.grid input{width:100%;min-width:56px;text-align:center}
+.grid thead input{font-weight:700;background:#f6f3f0}
+.grid td.rn input{background:var(--gray);font-weight:600}
+.x{border:none;background:none;color:#a0806c;cursor:pointer;font-size:15px;padding:0 4px}
+button{font:inherit;font-size:14px;padding:6px 12px;border-radius:6px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+button.main{background:var(--ink);color:#fff;font-size:17px;padding:10px 26px}
+button:hover{opacity:.85}
+.hint{font-size:12px;color:#8b7b70}
+.arrows input{width:110px}
+</style>
+</head>
+<body>
+<header>尺寸表產生器 <span style="font-size:13px;opacity:.75;font-weight:400">選版型 → 填數字 → 下載圖片（1000×1000 JPG）</span></header>
+<div class="wrap">
+ <div class="panel" id="panel">
+  <h3>版型</h3>
+  <div class="row">
+   <select id="tpl"></select>
+   <button id="reset" title="把這個版型恢復成預設欄位和數字">恢復預設</button>
+  </div>
+  <div class="row"><label>貨號（檔名用，可空白）</label><input type="text" id="sku" placeholder="例如 M215" style="width:140px"></div>
+
+  <h3>尺寸表</h3>
+  <div style="overflow-x:auto"><table class="grid" id="grid"></table></div>
+  <div class="row">
+   <button id="addRow">＋ 新增尺寸列</button>
+   <button id="addCol">＋ 新增欄位</button>
+   <label><input type="checkbox" id="cm"> 數值後加「CM」</label>
+  </div>
+  <div class="hint">欄位名稱、尺寸名稱（F、M、L、中碼…）都能直接改；格子可填數字或文字（如 連肩袖）。按 × 刪除。最多 6 欄、5 列。</div>
+
+  <h3>插圖標示文字</h3>
+  <div class="row arrows" id="arrows"></div>
+  <div class="hint">插圖上箭頭的標籤，清空就不顯示那個箭頭。</div>
+
+  <h3>適合標籤（空白就不顯示）</h3>
+  <div class="row"><input type="text" id="b0" placeholder="例如 中碼 適合M-L" style="width:170px"><input type="text" id="b1" placeholder="例如 大碼 適合L-XL" style="width:170px"><input type="text" id="b2" placeholder="第 3 個（選填）" style="width:150px"></div>
+  <div class="row"><label>標籤樣式</label>
+   <select id="bstyle" style="min-width:110px"><option value="dark">深色</option><option value="light">淺色</option></select></div>
+
+  <h3>試穿（空白就不顯示）</h3>
+  <div class="row"><input type="text" id="trial" placeholder="試穿A 大碼 / 身高160 / 體重63 / 臀圍40吋 / 腰圍31吋" style="width:100%"></div>
+  <div class="row"><label>感受標籤</label><input type="text" id="feel" placeholder="例如 舒適" style="width:110px"></div>
+
+  <div class="row" style="margin-top:18px"><button class="main" id="dl">下載圖片</button></div>
+ </div>
+ <div class="preview"><canvas id="cv" width="1000" height="1000"></canvas><div class="hint" style="margin-top:6px">即時預覽（實際輸出 1000×1000）</div></div>
+</div>
+
+<script>
+const BG='#f3f2f0', INK='#3b2a22', GRAY='#e8e6e2', BEIGE='#d9cfc7', ARROW='#b9a596', LINE='#4a3a31';
+const FONT='"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
+const FOOT=['※ 本尺寸表會因商品素材不同，可能與實際尺寸略有誤差。','※ 尺寸表為商品平放測量，以公分(CM)為單位。'];
+
+/* ---------- 版型 ---------- */
+const TEMPLATES={
+ skirt:{name:'裙子',layout:'bottom',cols:['腰圍','臀圍','裙長'],rows:[['中碼','31','58','84'],['大碼','33','64','85']],cm:false,
+  badges:['中碼 適合M-L','大碼 適合L-XL',''],bstyle:'dark',trial:'',feel:'',arrows:{waist:'腰圍',hip:'臀圍',len:'裙長'}},
+ coat:{name:'外套(長版)',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','66','56','102','46']],cm:true,
+  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
+ pants:{name:'褲子',layout:'side',cols:['腰圍','褲長','褲襠','臀圍','褲口'],rows:[['中碼','33','90','28','34','11'],['大碼','35','93','29','37','12']],cm:false,
+  badges:['中碼 適合M-L','大碼 適合L-XL',''],bstyle:'dark',trial:'試穿A 大碼 / 身高160 / 體重63 / 臀圍40吋 / 腰圍31吋',feel:'舒適',
+  arrows:{waist:'腰圍',hip:'臀圍',rise:'褲襠',len:'褲長',hem:'褲口'}},
+ tee:{name:'短袖上衣',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','連肩袖','75','68','25']],cm:false,
+  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}}
+};
+const ARROW_NAMES={waist:'腰',hip:'臀',len:'長度',shoulder:'肩',chest:'胸',sleeve:'袖',rise:'襠',hem:'褲口'};
+
+/* ---------- 插圖（向量線稿，座標為該插圖的自有座標） ---------- */
+// 每個 draw 回傳 {w,h,paths(ctx), arrows:[{key,a:[x,y],b:[x,y],at:0.5}]}
+const ILLU={
+ skirt:{w:520,h:540,draw(c){
+   // 腰頭
+   rr(c,160,40,200,42,6); c.stroke();
+   c.beginPath(); c.moveTo(166,61); c.lineTo(354,61); c.setLineDash([5,5]); c.stroke(); c.setLineDash([]);
+   // 裙身
+   c.beginPath(); c.moveTo(160,82);
+   c.bezierCurveTo(130,220,80,380,30,500);
+   // 下擺波浪
+   const pts=[30,110,190,260,330,410,490]; let x0=30;
+   for(let i=1;i<pts.length;i++){const x1=pts[i];c.quadraticCurveTo((x0+x1)/2,i%2?520:500,x1,500+(i%2?8:0));x0=x1;}
+   c.bezierCurveTo(440,380,390,220,360,82); c.closePath(); c.stroke();
+   // 褶線
+   [[205,82,150,505],[260,82,260,512],[315,82,370,505],[232,82,205,508],[288,82,318,508]].forEach(([a,b,d,e],i)=>{c.beginPath();c.moveTo(a,b);c.quadraticCurveTo((a+d)/2+(i%2?6:-6),(b+e)/2,d,e);c.globalAlpha=.55;c.stroke();c.globalAlpha=1;});
+ },arrows:[{key:'waist',a:[160,18],b:[360,18]},{key:'hip',a:[132,190],b:[388,190]},{key:'len',a:[508,40],b:[508,505]}]},
+
+ pants:{w:470,h:580,draw(c){
+   rr(c,110,40,250,44,6); c.stroke();
+   c.beginPath(); c.moveTo(116,62); c.lineTo(354,62); c.setLineDash([5,5]); c.stroke(); c.setLineDash([]);
+   c.beginPath(); c.moveTo(110,84);
+   c.bezierCurveTo(95,200,70,380,55,555); c.lineTo(222,555); c.lineTo(235,262);
+   c.lineTo(248,555); c.lineTo(415,555); c.bezierCurveTo(400,380,375,200,360,84); c.closePath(); c.stroke();
+   // 前襠線 & 口袋
+   c.globalAlpha=.6;
+   c.beginPath(); c.moveTo(235,84); c.quadraticCurveTo(238,180,235,262); c.stroke();
+   c.beginPath(); c.moveTo(150,84); c.quadraticCurveTo(160,130,112,150); c.stroke();
+   c.beginPath(); c.moveTo(320,84); c.quadraticCurveTo(310,130,358,150); c.stroke();
+   c.beginPath(); c.moveTo(140,300); c.lineTo(130,550); c.moveTo(330,300); c.lineTo(340,550); c.stroke();
+   c.globalAlpha=1;
+ },arrows:[{key:'waist',a:[110,16],b:[360,16]},{key:'hip',a:[96,200],b:[374,200],at:.78},{key:'rise',a:[262,88],b:[262,258],at:.26},{key:'len',a:[30,40],b:[30,555]},{key:'hem',a:[250,530],b:[413,530]}]},
+
+ tee:{w:580,h:500,draw(c){
+   c.beginPath();
+   c.moveTo(232,52); c.quadraticCurveTo(290,105,348,52);    // 領口
+   c.lineTo(400,66); c.lineTo(548,180); c.lineTo(488,240); c.lineTo(410,182);
+   c.lineTo(412,470); c.lineTo(168,470); c.lineTo(170,182);
+   c.lineTo(92,240); c.lineTo(32,180); c.lineTo(180,66); c.closePath(); c.stroke();
+   c.beginPath(); c.moveTo(232,52); c.quadraticCurveTo(290,88,348,52); c.globalAlpha=.6; c.stroke();
+   c.beginPath(); c.moveTo(100,232); c.lineTo(42,176); c.moveTo(480,232); c.lineTo(538,176); c.stroke(); c.globalAlpha=1;
+ },arrows:[{key:'shoulder',a:[180,30],b:[400,30]},{key:'chest',a:[172,206],b:[408,206]},{key:'len',a:[370,72],b:[370,468],at:.62},{key:'sleeve',a:[168,46],b:[18,160]}]},
+
+ coat:{w:580,h:640,draw(c){
+   c.beginPath();
+   c.moveTo(240,48); c.lineTo(185,64);
+   c.lineTo(78,430); c.lineTo(138,442); c.lineTo(178,200);
+   c.lineTo(165,612); c.lineTo(290,612); c.lineTo(290,140); c.closePath(); c.stroke();
+   c.beginPath();
+   c.moveTo(340,48); c.lineTo(395,64);
+   c.lineTo(502,430); c.lineTo(442,442); c.lineTo(402,200);
+   c.lineTo(415,612); c.lineTo(290,612); c.lineTo(290,140); c.closePath(); c.stroke();
+   // 後領
+   c.beginPath(); c.moveTo(240,48); c.quadraticCurveTo(290,70,340,48); c.stroke();
+   c.globalAlpha=.6;
+   c.beginPath(); c.moveTo(250,52); c.lineTo(282,150); c.lineTo(282,612); c.moveTo(330,52); c.lineTo(298,150); c.lineTo(298,612); c.stroke();
+   c.beginPath(); c.moveTo(85,405); c.lineTo(143,416); c.moveTo(495,405); c.lineTo(437,416); c.stroke();
+   rr(c,190,400,64,70,4); c.stroke(); rr(c,326,400,64,70,4); c.stroke();
+   c.globalAlpha=1;
+ },arrows:[{key:'shoulder',a:[185,26],b:[395,26]},{key:'chest',a:[180,222],b:[400,222]},{key:'len',a:[230,70],b:[230,610],at:.62},{key:'sleeve',a:[170,58],b:[60,428]}]}
+};
+
+/* ---------- 狀態 ---------- */
+const LS='sizechart_v1';
+let store={current:'skirt',sku:'',states:{}};
+const params=new URLSearchParams(location.search);
+const TEST=params.get('render');
+try{ if(!TEST){const s=JSON.parse(localStorage.getItem(LS)||'null'); if(s&&s.states) store=s;} }catch(e){}
+if(TEST && TEMPLATES[TEST]) store.current=TEST;
+if(TEST && params.get('stress')){const t=clone(TEMPLATES[TEST]);while(t.cols.length<6)t.cols.push('欄'+t.cols.length);
+ t.rows=['XS','S','M','L','XL'].map((n,i)=>[n].concat(t.cols.map((c,j)=>String(60+i*4+j))));t.rows[0][1]='連肩袖';t.cm=true;
+ t.badges=['S碼 適合XS-S','M碼 適合M-L','XL碼 適合XL-2XL'];t.trial='試穿A 大碼 / 身高160 / 體重63 / 臀圍40吋 / 腰圍31吋';t.feel='舒適';store.states={};store.states[TEST]=t;}
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function st(){ if(!store.states[store.current]) store.states[store.current]=clone(TEMPLATES[store.current]); return store.states[store.current]; }
+function save(){ if(!TEST) try{localStorage.setItem(LS,JSON.stringify(store));}catch(e){} }
+
+/* ---------- 介面 ---------- */
+const $=id=>document.getElementById(id);
+const tplSel=$('tpl');
+Object.entries(TEMPLATES).forEach(([k,t])=>{const o=document.createElement('option');o.value=k;o.textContent=t.name;tplSel.appendChild(o);});
+
+function buildUI(){
+ const s=st(); tplSel.value=store.current; $('sku').value=store.sku||'';
+ $('cm').checked=!!s.cm; ['b0','b1','b2'].forEach((id,i)=>$(id).value=s.badges[i]||'');
+ $('bstyle').value=s.bstyle||'dark'; $('trial').value=s.trial||''; $('feel').value=s.feel||'';
+ // grid
+ const g=$('grid'); g.innerHTML='';
+ const th=document.createElement('thead'), tr=document.createElement('tr');
+ tr.appendChild(document.createElement('td')).innerHTML='<span class="hint">尺寸</span>';
+ s.cols.forEach((c,ci)=>{const td=document.createElement('td');
+   td.innerHTML=`<div style="display:flex"><input type="text"><button class="x" title="刪除此欄">×</button></div>`;
+   const inp=td.querySelector('input'); inp.value=c; inp.oninput=()=>{s.cols[ci]=inp.value;changed();};
+   td.querySelector('button').onclick=()=>{ if(s.cols.length<=1)return; s.cols.splice(ci,1); s.rows.forEach(r=>r.splice(ci+1,1)); buildUI(); changed(); };
+   tr.appendChild(td);});
+ tr.appendChild(document.createElement('td')); th.appendChild(tr); g.appendChild(th);
+ const tb=document.createElement('tbody');
+ s.rows.forEach((r,ri)=>{const tr=document.createElement('tr');
+   r.forEach((v,ci)=>{const td=document.createElement('td'); if(ci===0) td.className='rn';
+     const inp=document.createElement('input'); inp.type='text'; inp.value=v; inp.oninput=()=>{r[ci]=inp.value;changed();}; td.appendChild(inp); tr.appendChild(td);});
+   const td=document.createElement('td'); td.innerHTML='<button class="x" title="刪除此列">×</button>';
+   td.firstChild.onclick=()=>{ if(s.rows.length<=1)return; s.rows.splice(ri,1); buildUI(); changed(); };
+   tr.appendChild(td); tb.appendChild(tr);});
+ g.appendChild(tb);
+ $('addRow').disabled=s.rows.length>=5; $('addCol').disabled=s.cols.length>=6;
+ // arrows
+ const a=$('arrows'); a.innerHTML='';
+ Object.keys(TEMPLATES[store.current].arrows).forEach(k=>{
+   const w=document.createElement('label'); w.innerHTML=`${ARROW_NAMES[k]||k}：<input type="text">`;
+   const inp=w.querySelector('input'); inp.value=(s.arrows&&k in s.arrows)?s.arrows[k]:TEMPLATES[store.current].arrows[k];
+   inp.oninput=()=>{s.arrows[k]=inp.value;changed();}; a.appendChild(w);});
+}
+function changed(){ save(); draw(); }
+tplSel.onchange=()=>{store.current=tplSel.value; buildUI(); changed();};
+$('reset').onclick=()=>{ if(confirm('把「'+TEMPLATES[store.current].name+'」恢復成預設欄位和數字？')){store.states[store.current]=clone(TEMPLATES[store.current]); buildUI(); changed();} };
+$('sku').oninput=e=>{store.sku=e.target.value;save();};
+$('cm').onchange=e=>{st().cm=e.target.checked;changed();};
+['b0','b1','b2'].forEach((id,i)=>$(id).oninput=e=>{st().badges[i]=e.target.value;changed();});
+$('bstyle').onchange=e=>{st().bstyle=e.target.value;changed();};
+$('trial').oninput=e=>{st().trial=e.target.value;changed();};
+$('feel').oninput=e=>{st().feel=e.target.value;changed();};
+$('addRow').onclick=()=>{const s=st(); if(s.rows.length>=5)return; s.rows.push([''].concat(s.cols.map(()=>''))); buildUI(); changed();};
+$('addCol').onclick=()=>{const s=st(); if(s.cols.length>=6)return; s.cols.push('新欄位'); s.rows.forEach(r=>r.push('')); buildUI(); changed();};
+$('dl').onclick=()=>{
+ draw();
+ $('cv').toBlob(b=>{const a=document.createElement('a'); const sku=(store.sku||'').trim();
+   a.download=(sku?sku+'_':'')+'尺寸表.jpg'; a.href=URL.createObjectURL(b); document.body.appendChild(a); a.click();
+   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);},'image/jpeg',0.95);
+};
+
+/* ---------- 繪圖工具 ---------- */
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function font(sz,w){return `${w||400} ${sz}px ${FONT}`;}
+function fitFont(c,text,maxW,sz,w,min){let s=sz;c.font=font(s,w);while(s>min&&c.measureText(text).width>maxW){s--;c.font=font(s,w);}return s;}
+const isNum=v=>/^[\d.\s\-~～/]+$/.test(v)&&/\d/.test(v);
+
+function pill(c,cx,cy,text,sz,fill,color){
+ c.font=font(sz,500); const tw=c.measureText(text).width, ph=sz+14, pw=tw+sz*1.1;
+ rr(c,cx-pw/2,cy-ph/2,pw,ph,ph/2); c.fillStyle=fill; c.fill();
+ c.fillStyle=color; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,cx,cy+1);
+ return {w:pw,h:ph};
+}
+function arrowHead(c,x,y,ang,len){c.beginPath();c.moveTo(x,y);c.lineTo(x-len*Math.cos(ang-0.45),y-len*Math.sin(ang-0.45));c.moveTo(x,y);c.lineTo(x-len*Math.cos(ang+0.45),y-len*Math.sin(ang+0.45));c.stroke();}
+function drawArrow(c,a,b,label,at,sz){
+ c.save(); c.strokeStyle=ARROW; c.lineWidth=2.4; c.lineCap='round';
+ c.beginPath(); c.moveTo(a[0],a[1]); c.lineTo(b[0],b[1]); c.stroke();
+ const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+ arrowHead(c,b[0],b[1],ang,12); arrowHead(c,a[0],a[1],ang+Math.PI,12);
+ const t=at==null?.5:at; pill(c,a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,label,sz,BEIGE,INK);
+ c.restore();
+}
+function drawIllu(c,key,arrows,box){
+ const I=ILLU[key]; const sc=Math.min(box.w/I.w,box.h/I.h);
+ const ox=box.x+(box.w-I.w*sc)/2, oy=box.y+(box.h-I.h*sc)/2;
+ c.save(); c.translate(ox,oy); c.scale(sc,sc);
+ c.strokeStyle=LINE; c.lineWidth=2.6/sc*Math.min(1,sc*1.1); c.lineJoin='round'; c.lineCap='round';
+ I.draw(c); c.restore();
+ const P=p=>[ox+p[0]*sc,oy+p[1]*sc];
+ const sz=Math.max(17,Math.min(24,Math.round(24*Math.sqrt(sc))));
+ I.arrows.forEach(ar=>{const lab=(arrows[ar.key]||'').trim(); if(lab) drawArrow(c,P(ar.a),P(ar.b),lab,ar.at,sz);});
+}
+
+/* 適合標籤：「中碼 適合M-L」→ 第一段粗體 */
+function badgeSize(c,text,sz){const [h,...r]=text.trim().split(/\s+/);c.font=font(sz,700);let w=c.measureText(h).width;if(r.length){c.font=font(sz*0.85,400);w+=c.measureText(r.join(' ')).width+sz*0.45;}return {w:w+sz*1.6,h:sz+20};}
+function drawBadge(c,x,y,text,sz,style){
+ const {w,h}=badgeSize(c,text,sz); const dark=style!=='light';
+ rr(c,x,y,w,h,h/2); c.fillStyle=dark?INK:BEIGE; c.fill();
+ const col=dark?'#f3f2f0':INK; const [hd,...r]=text.trim().split(/\s+/);
+ c.textBaseline='middle'; c.textAlign='left'; c.fillStyle=col; let cx=x+sz*0.8;
+ c.font=font(sz,700); c.fillText(hd,cx,y+h/2+1); cx+=c.measureText(hd).width+sz*0.45;
+ if(r.length){c.font=font(sz*0.85,400); c.fillText(r.join(' '),cx,y+h/2+1);}
+ return {w,h};
+}
+function feelSize(c,t,sz){c.font=font(sz,600);return {w:c.measureText(t).width+sz*1.2,h:sz+16};}
+function drawFeel(c,x,y,t,sz){const {w,h}=feelSize(c,t,sz);rr(c,x,y,w,h,10);c.fillStyle=INK;c.fill();c.fillStyle='#f3f2f0';c.font=font(sz,600);c.textAlign='center';c.textBaseline='middle';c.fillText(t,x+w/2,y+h/2+1);return {w,h};}
+
+/* ---------- 主繪圖 ---------- */
+function draw(){
+ const cv=$('cv'), c=cv.getContext('2d'), s=st(), key=store.current, T=TEMPLATES[key];
+ c.setTransform(1,0,0,1,0,0); c.fillStyle=BG; c.fillRect(0,0,1000,1000);
+ // 左上淡淡弧線
+ c.save(); c.strokeStyle='rgba(59,42,34,0.10)'; c.lineWidth=2;
+ c.beginPath(); c.moveTo(-20,300); c.bezierCurveTo(40,120,170,20,380,-10); c.stroke();
+ c.beginPath(); c.moveTo(-20,345); c.bezierCurveTo(60,150,200,45,430,-10); c.strokeStyle='rgba(59,42,34,0.05)'; c.stroke(); c.restore();
+
+ // 標題
+ c.fillStyle=INK; c.textBaseline='alphabetic'; c.textAlign='left';
+ c.font=font(46,700); const t1='尺寸資訊', w1=c.measureText(t1).width;
+ c.font=`italic 300 30px ${FONT}`; const t2='—— SIZE INFO', w2=c.measureText(t2).width;
+ const tx=(1000-w1-w2-24)/2;
+ c.font=font(46,700); c.fillText(t1,tx,118);
+ c.font=`italic 300 30px Georgia, "Times New Roman", ${FONT}`; c.save(); c.translate(tx+w1+24,116); c.transform(1,0,-0.2,1,0,0); c.font=font(30,300); c.fillText(t2,0,0); c.restore();
+
+ // 表格
+ const nC=s.cols.length, nR=s.rows.length;
+ const L=60, R=940, W=R-L, firstW=nC>=6?130:nC>=5?150:170, cw=(W-firstW)/nC;
+ const top=160, hh=nR>=4?62:70, rh=nR>=5?56:nR>=4?60:68;
+ c.fillStyle=GRAY; c.fillRect(L,top,firstW,hh+rh*nR);
+ c.textAlign='center'; c.textBaseline='middle';
+ const hs=nC>=6?27:30;
+ c.fillStyle=INK; c.font=font(hs,700); c.textAlign='center'; c.fillText('尺寸',L+firstW/2,top+hh/2+1); s.cols.forEach((h,i)=>{c.fillStyle=INK; fitFont(c,h,cw-14,hs,700,16); c.fillText(h,L+firstW+cw*i+cw/2,top+hh/2+1);});
+ s.rows.forEach((r,ri)=>{const y=top+hh+rh*ri+rh/2+1;
+   c.fillStyle=INK; fitFont(c,r[0]||'',firstW-16,30,700,16); c.fillText(r[0]||'',L+firstW/2,y);
+   for(let ci=0;ci<nC;ci++){const v=(r[ci+1]||'').trim(); if(!v)continue; const cx=L+firstW+cw*ci+cw/2;
+     const vs=nC>=6?27:30;
+     if(s.cm&&isNum(v)){c.font=font(vs,400); let vw=c.measureText(v).width; c.font=font(vs*0.55,400); const uw=c.measureText('CM').width+3;
+       let f=vs; if(vw+uw>cw-10){f=Math.max(16,Math.floor(vs*(cw-10)/(vw+uw)));}
+       c.font=font(f,400); vw=c.measureText(v).width; c.font=font(f*0.55,400); const uw2=c.measureText('CM').width+3;
+       const sx=cx-(vw+uw2)/2; c.textAlign='left'; c.font=font(f,400); c.fillText(v,sx,y);
+       c.font=font(f*0.55,400); c.textBaseline='alphabetic'; c.fillText('CM',sx+vw+3,y+f*0.36); c.textBaseline='middle'; c.textAlign='center';}
+     else{fitFont(c,v,cw-12,vs,400,15); c.fillText(v,cx,y);}
+   }});
+ c.strokeStyle=INK; c.lineWidth=2.2;
+ const bottom=top+hh+rh*nR;
+ [[top],[top+hh],[bottom]].forEach(([y])=>{c.beginPath();c.moveTo(L,y);c.lineTo(R,y);c.stroke();});
+ c.lineWidth=1; c.strokeStyle='rgba(59,42,34,0.45)';
+ for(let i=1;i<nR;i++){const y=top+hh+rh*i; c.beginPath(); c.moveTo(L,y); c.lineTo(R,y); c.stroke();}
+
+ // 註腳
+ c.fillStyle=INK; c.textAlign='left'; c.textBaseline='alphabetic'; c.font=font(22,400);
+ c.fillText(FOOT[0],L,940); c.fillText(FOOT[1],L,974);
+
+ // 內容區
+ const areaTop=bottom+34, areaBot=900;
+ const badges=(s.badges||[]).map(b=>(b||'').trim()).filter(Boolean);
+ const trial=(s.trial||'').trim(), feel=(s.feel||'').trim();
+ const arrows=Object.assign({},T.arrows,s.arrows||{});
+
+ if(T.layout==='side' && (badges.length||trial||feel)){
+   // 插圖左、說明右
+   const noteX=600, noteW=R-noteX;
+   // 計算右側高度
+   const parts=trial?trial.split(/\s*[/／]\s*/).filter(Boolean):[];
+   const avail=areaBot-areaTop; let k=1, lsz, lh, bsz, g1, g2, bg, h;
+   const meas=()=>{lsz=Math.round(26*k); lh=Math.round(40*k); bsz=Math.round(22*k); g1=Math.round(14*k); g2=Math.round(30*k); bg=Math.round(14*k);
+     h=parts.length*lh; if(feel) h+=(parts.length?g1:0)+(lsz-2+16);
+     if(badges.length) h+=(h?g2:0)+badges.length*(bsz+20)+(badges.length-1)*bg;};
+   meas(); while(h>avail&&k>0.55){k-=0.03;meas();}
+   let y=Math.max(areaTop,areaTop+(avail-h)/2);
+   c.textAlign='left'; c.textBaseline='middle'; c.fillStyle=INK;
+   parts.forEach((p,i)=>{fitFont(c,p,noteW,lsz,i===0?700:400,14); c.fillStyle=INK; c.fillText(p,noteX,y+lh/2); y+=lh;});
+   if(feel){ if(parts.length) y+=g1; y+=drawFeel(c,noteX,y,feel,lsz-2).h; }
+   if(badges.length){ if(parts.length||feel) y+=g2; badges.forEach(b=>{let sz=bsz; while(sz>12&&badgeSize(c,b,sz).w>noteW) sz--; y+=drawBadge(c,noteX,y,b,sz,s.bstyle).h+bg;}); }
+   drawIllu(c,key,arrows,{x:L-10,y:areaTop,w:noteX-L-30,h:areaBot-areaTop});
+ } else {
+   // 插圖置中、說明在下
+   let noteH=0; const bsz=22, gap=18;
+   const bh=badges.length?bsz+20:0;
+   const trialH=(trial||feel)?44:0;
+   noteH=bh+trialH+(bh&&trialH?14:0);
+   const illuBot=areaBot-(noteH?noteH+22:0);
+   drawIllu(c,key,arrows,{x:L,y:areaTop,w:W,h:illuBot-areaTop});
+   let y=illuBot+22;
+   if(trialH){
+     c.font=font(24,400); const tw=trial?Math.min(c.measureText(trial).width,W-140):0;
+     const fw=feel?feelSize(c,feel,22).w:0; const total=tw+(trial&&feel?16:0)+fw; let x=500-total/2;
+     c.fillStyle=INK; c.textAlign='left'; c.textBaseline='middle';
+     if(trial){fitFont(c,trial,W-140,24,400,14); c.fillText(trial,x,y+22); x+=tw+16;}
+     if(feel) drawFeel(c,x,y+22-(22+16)/2,feel,22);
+     y+=trialH+14;
+   }
+   if(badges.length){
+     let sz=bsz; const tot=()=>badges.reduce((a,b)=>a+badgeSize(c,b,sz).w,0)+gap*(badges.length-1);
+     while(sz>14&&tot()>W) sz--;
+     let x=500-tot()/2; badges.forEach(b=>{x+=drawBadge(c,x,y,b,sz,s.bstyle).w+gap;});
+   }
+ }
+}
+
+buildUI();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(draw);
+draw();
+if(TEST){document.body.innerHTML='';document.body.style.margin='0';const cv=document.createElement('canvas');cv.id='cv';cv.width=1000;cv.height=1000;document.body.appendChild(cv);draw();}
+</script>
+</body>
+</html>

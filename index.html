@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的工具</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f7fa;
+      color: #18283a;
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(100%, 52rem);
+      margin-inline: auto;
+      padding: clamp(2rem, 7vw, 5rem) clamp(1rem, 5vw, 2rem);
+    }
+
+    h1 {
+      margin: 0 0 1.5rem;
+      font-size: clamp(2rem, 6vw, 3rem);
+    }
+
+    ul {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+      gap: 0.75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: flex;
+    }
+
+    a {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      min-height: 3.5rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid #aebdcb;
+      border-radius: 0.625rem;
+      background: #fff;
+      color: #153c65;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    a:hover {
+      border-color: #23598a;
+      background: #eaf3fb;
+    }
+
+    a:focus-visible {
+      outline: 3px solid #23598a;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>我的工具</h1>
+    <nav aria-label="工具列表">
+      <ul role="list">
+        <li><a href="inventory.html">跨平台價格庫存管理</a></li>
+        <li><a href="momo-price.html">活動變價</a></li>
+        <li><a href="moplus-price.html">MO+變價</a></li>
+        <li><a href="unlisted.html">未上架查詢</a></li>
+        <li><a href="tw2cn.html">繁轉簡</a></li>
+        <li><a href="restock.html">補貨盤點</a></li>
+        <li><a href="1688-orders.html">1688 訂單追蹤</a></li>
+        <li><a href="size-chart.html">尺寸表產生器</a></li>
+        <li><a href="image-to-jpg/index.html">圖片轉 JPG</a></li>
+      </ul>
+    </nav>
+  </main>
+</body>
+</html>
