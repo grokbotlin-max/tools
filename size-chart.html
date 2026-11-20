@@ -89,11 +89,7 @@ const TEMPLATES={
  jacket:{name:'外套(正常版)',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','44','54','66','58']],cm:true,
   badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
  vest:{name:'背心',layout:'bottom',cols:['肩寬','胸寬','衣長','下擺'],rows:[['F','36','46','50','50']],cm:true,
-  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',hemline:'下擺'}},
- longtop:{name:'長袖上衣',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','40','50','64','58']],cm:true,
-  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
- shirt:{name:'長袖襯衫',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','39','48','70','60']],cm:true,
-  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}}
+  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',hemline:'下擺'}}
 };
 const ARROW_NAMES={waist:'腰',hip:'臀',len:'長度',shoulder:'肩',chest:'胸',sleeve:'袖',rise:'襠',hem:'褲口',hemline:'下擺'};
 
@@ -193,52 +189,7 @@ const ILLU={
    c.beginPath(); c.moveTo(210,48); c.lineTo(222,124); c.lineTo(222,328); c.moveTo(250,48); c.lineTo(238,124); c.lineTo(238,328); c.stroke();
    rr(c,158,250,44,40,4); c.stroke(); rr(c,258,250,44,40,4); c.stroke();
    c.globalAlpha=1;
- },arrows:[{key:'shoulder',a:[140,20],b:[320,20]},{key:'chest',a:[156,224],b:[304,224]},{key:'len',a:[190,72],b:[190,326],at:.46},{key:'hemline',a:[122,356],b:[338,356]}]},
-
- longtop:{w:600,h:590,draw(c){
-   // 圓領長袖平面稿：圓肩、袖貼身微張、直袖口、圓下擺（對照實物平面圖）
-   c.beginPath();
-   c.moveTo(258,46);
-   c.bezierCurveTo(276,80,324,80,342,46);              // 圓領
-   c.bezierCurveTo(378,54,412,66,434,112);             // 右肩，圓順接入袖
-   c.bezierCurveTo(448,210,458,370,466,528);           // 右袖外側，微外張
-   c.lineTo(422,538);                                  // 右直袖口
-   c.bezierCurveTo(412,380,400,240,394,178);           // 右袖內側
-   c.quadraticCurveTo(388,168,384,190);                // 右腋下圓角
-   c.bezierCurveTo(396,300,392,430,376,524);           // 右側身，微弧
-   c.quadraticCurveTo(300,546,224,524);                // 圓下擺
-   c.bezierCurveTo(208,430,204,300,216,190);           // 左側身
-   c.quadraticCurveTo(212,168,206,178);                // 左腋下圓角
-   c.bezierCurveTo(200,240,188,380,178,538);           // 左袖內側
-   c.lineTo(134,528);                                  // 左直袖口
-   c.bezierCurveTo(142,370,152,210,166,112);           // 左袖外側
-   c.bezierCurveTo(188,66,222,54,258,46);              // 左肩
-   c.closePath(); c.stroke();
-   c.globalAlpha=.55;
-   c.beginPath(); c.moveTo(270,54); c.bezierCurveTo(284,88,316,88,330,54); c.stroke(); // 領羅紋
-   c.globalAlpha=1;
- },arrows:[{key:'shoulder',a:[166,22],b:[434,22]},{key:'chest',a:[214,214],b:[386,214]},{key:'len',a:[330,50],b:[330,542],at:.62},{key:'sleeve',a:[161,110],b:[129,530]}]},
-
- shirt:{w:780,h:530,draw(c){
-   // 尖領、門襟、袖口的長袖襯衫
-   c.beginPath();
-   c.moveTo(338,80); c.quadraticCurveTo(390,114,442,80);
-   c.lineTo(504,66); c.lineTo(742,246); c.lineTo(706,290); c.lineTo(634,250); c.lineTo(514,168);
-   c.lineTo(520,492); c.lineTo(260,492); c.lineTo(266,168);
-   c.lineTo(146,250); c.lineTo(74,290); c.lineTo(38,246); c.lineTo(276,66); c.closePath(); c.stroke();
-   c.beginPath();
-   c.moveTo(338,80); c.lineTo(292,132); c.lineTo(368,108);
-   c.moveTo(442,80); c.lineTo(488,132); c.lineTo(412,108); c.stroke();
-   c.beginPath(); c.moveTo(346,74); c.quadraticCurveTo(390,100,434,74); c.stroke();
-   c.globalAlpha=.6;
-   c.beginPath(); c.moveTo(383,112); c.lineTo(383,492); c.moveTo(397,112); c.lineTo(397,492); c.stroke();
-   [168,248,328,408].forEach(y=>{c.beginPath();c.arc(390,y,4.4,0,Math.PI*2);c.stroke();});
-   c.beginPath();
-   c.moveTo(54,254); c.lineTo(110,276); c.moveTo(726,254); c.lineTo(670,276); c.stroke();
-   c.beginPath(); c.arc(84,268,3.4,0,Math.PI*2); c.stroke();
-   c.beginPath(); c.arc(696,268,3.4,0,Math.PI*2); c.stroke();
-   c.globalAlpha=1;
- },arrows:[{key:'shoulder',a:[276,28],b:[504,28]},{key:'chest',a:[268,202],b:[512,202]},{key:'len',a:[458,78],b:[458,490],at:.64},{key:'sleeve',a:[266,52],b:[44,238]}]}
+ },arrows:[{key:'shoulder',a:[140,20],b:[320,20]},{key:'chest',a:[156,224],b:[304,224]},{key:'len',a:[190,72],b:[190,326],at:.46},{key:'hemline',a:[122,356],b:[338,356]}]}
 };
 
 /* ---------- 狀態 ---------- */
