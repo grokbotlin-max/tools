@@ -195,28 +195,29 @@ const ILLU={
    c.globalAlpha=1;
  },arrows:[{key:'shoulder',a:[140,20],b:[320,20]},{key:'chest',a:[156,224],b:[304,224]},{key:'len',a:[190,72],b:[190,326],at:.46},{key:'hemline',a:[122,356],b:[338,356]}]},
 
- longtop:{w:720,h:540,draw(c){
-   // 圓領長袖平面稿：直筒身、裝袖、袖約離身 25°，直線收到窄袖口
+ longtop:{w:600,h:590,draw(c){
+   // 圓領長袖平面稿：圓肩、袖貼身微張、直袖口、圓下擺（對照實物平面圖）
    c.beginPath();
-   c.moveTo(310,50);
-   c.quadraticCurveTo(360,128,410,50); // 圓領
-   c.lineTo(484,70);                   // 右肩
-   c.lineTo(662,470);                  // 右袖外側
-   c.lineTo(627,485);                  // 右袖口（窄，不外擴）
-   c.lineTo(452,178);                  // 右袖內側
-   c.lineTo(452,508);                  // 右側縫
-   c.lineTo(268,508);                  // 直下擺
-   c.lineTo(268,178);                  // 左側縫
-   c.lineTo(93,485);                   // 左袖內側
-   c.lineTo(58,470);                   // 左袖口
-   c.lineTo(236,70);                   // 左袖外側
+   c.moveTo(258,46);
+   c.bezierCurveTo(276,80,324,80,342,46);              // 圓領
+   c.bezierCurveTo(378,54,412,66,434,112);             // 右肩，圓順接入袖
+   c.bezierCurveTo(448,210,458,370,466,528);           // 右袖外側，微外張
+   c.lineTo(422,538);                                  // 右直袖口
+   c.bezierCurveTo(412,380,400,240,394,178);           // 右袖內側
+   c.quadraticCurveTo(388,168,384,190);                // 右腋下圓角
+   c.bezierCurveTo(396,300,392,430,376,524);           // 右側身，微弧
+   c.quadraticCurveTo(300,546,224,524);                // 圓下擺
+   c.bezierCurveTo(208,430,204,300,216,190);           // 左側身
+   c.quadraticCurveTo(212,168,206,178);                // 左腋下圓角
+   c.bezierCurveTo(200,240,188,380,178,538);           // 左袖內側
+   c.lineTo(134,528);                                  // 左直袖口
+   c.bezierCurveTo(142,370,152,210,166,112);           // 左袖外側
+   c.bezierCurveTo(188,66,222,54,258,46);              // 左肩
    c.closePath(); c.stroke();
    c.globalAlpha=.55;
-   c.beginPath(); c.moveTo(324,62); c.quadraticCurveTo(360,112,396,62); c.stroke(); // 領羅紋
-   c.beginPath(); c.moveTo(276,484); c.lineTo(444,484); c.stroke();                 // 下擺羅紋
-   c.beginPath(); c.moveTo(68,458); c.lineTo(90,470); c.moveTo(652,458); c.lineTo(630,470); c.stroke(); // 袖口羅紋
+   c.beginPath(); c.moveTo(270,54); c.bezierCurveTo(284,88,316,88,330,54); c.stroke(); // 領羅紋
    c.globalAlpha=1;
- },arrows:[{key:'shoulder',a:[236,26],b:[484,26]},{key:'chest',a:[268,202],b:[452,202]},{key:'len',a:[420,54],b:[420,508],at:.62},{key:'sleeve',a:[230,64],b:[52,464]}]},
+ },arrows:[{key:'shoulder',a:[166,22],b:[434,22]},{key:'chest',a:[214,214],b:[386,214]},{key:'len',a:[330,50],b:[330,542],at:.62},{key:'sleeve',a:[161,110],b:[129,530]}]},
 
  shirt:{w:780,h:530,draw(c){
    // 尖領、門襟、袖口的長袖襯衫
