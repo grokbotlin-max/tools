@@ -85,9 +85,13 @@ const TEMPLATES={
   badges:['中碼 適合M-L','大碼 適合L-XL',''],bstyle:'dark',trial:'試穿A 大碼 / 身高160 / 體重63 / 臀圍40吋 / 腰圍31吋',feel:'舒適',
   arrows:{waist:'腰圍',hip:'臀圍',rise:'褲襠',len:'褲長',hem:'褲口'}},
  tee:{name:'短袖上衣',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','連肩袖','75','68','25']],cm:false,
-  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}}
+  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
+ jacket:{name:'外套(正常版)',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','44','54','66','58']],cm:true,
+  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
+ vest:{name:'背心',layout:'bottom',cols:['肩寬','胸寬','衣長','下擺'],rows:[['F','36','46','50','50']],cm:true,
+  badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',hemline:'下擺'}}
 };
-const ARROW_NAMES={waist:'腰',hip:'臀',len:'長度',shoulder:'肩',chest:'胸',sleeve:'袖',rise:'襠',hem:'褲口'};
+const ARROW_NAMES={waist:'腰',hip:'臀',len:'長度',shoulder:'肩',chest:'胸',sleeve:'袖',rise:'襠',hem:'褲口',hemline:'下擺'};
 
 /* ---------- 插圖（向量線稿，座標為該插圖的自有座標） ---------- */
 // 每個 draw 回傳 {w,h,paths(ctx), arrows:[{key,a:[x,y],b:[x,y],at:0.5}]}
@@ -148,7 +152,44 @@ const ILLU={
    c.beginPath(); c.moveTo(85,405); c.lineTo(143,416); c.moveTo(495,405); c.lineTo(437,416); c.stroke();
    rr(c,190,400,64,70,4); c.stroke(); rr(c,326,400,64,70,4); c.stroke();
    c.globalAlpha=1;
- },arrows:[{key:'shoulder',a:[185,26],b:[395,26]},{key:'chest',a:[180,222],b:[400,222]},{key:'len',a:[230,70],b:[230,610],at:.62},{key:'sleeve',a:[170,58],b:[60,428]}]}
+ },arrows:[{key:'shoulder',a:[185,26],b:[395,26]},{key:'chest',a:[180,222],b:[400,222]},{key:'len',a:[230,70],b:[230,610],at:.62},{key:'sleeve',a:[170,58],b:[60,428]}]},
+
+ jacket:{w:580,h:500,draw(c){
+   // 正常版外套：開襟、及臀、長袖（袖口接近下擺）
+   c.beginPath();
+   c.moveTo(240,46); c.lineTo(186,64);
+   c.lineTo(58,392); c.lineTo(122,406); c.lineTo(176,172);
+   c.lineTo(160,458); c.lineTo(290,458); c.lineTo(290,124); c.closePath(); c.stroke();
+   c.beginPath();
+   c.moveTo(340,46); c.lineTo(394,64);
+   c.lineTo(522,392); c.lineTo(458,406); c.lineTo(404,172);
+   c.lineTo(420,458); c.lineTo(290,458); c.lineTo(290,124); c.closePath(); c.stroke();
+   c.beginPath(); c.moveTo(240,46); c.quadraticCurveTo(290,68,340,46); c.stroke();
+   c.globalAlpha=.6;
+   c.beginPath(); c.moveTo(250,50); c.lineTo(280,136); c.lineTo(280,458); c.moveTo(330,50); c.lineTo(300,136); c.lineTo(300,458); c.stroke();
+   c.beginPath(); c.moveTo(68,368); c.lineTo(128,380); c.moveTo(512,368); c.lineTo(452,380); c.stroke();
+   rr(c,186,286,62,62,4); c.stroke(); rr(c,332,286,62,62,4); c.stroke();
+   c.globalAlpha=1;
+ },arrows:[{key:'shoulder',a:[186,22],b:[394,22]},{key:'chest',a:[174,206],b:[406,206]},{key:'len',a:[226,64],b:[226,456],at:.48},{key:'sleeve',a:[172,54],b:[48,390]}]},
+
+ vest:{w:460,h:400,draw(c){
+   // 短版無袖背心：袖窿後衣身收到腰際
+   c.beginPath();
+   c.moveTo(200,44); c.lineTo(140,66);
+   c.bezierCurveTo(152,118,164,168,158,206);
+   c.quadraticCurveTo(148,270,122,328);
+   c.lineTo(230,328); c.lineTo(230,118); c.closePath(); c.stroke();
+   c.beginPath();
+   c.moveTo(260,44); c.lineTo(320,66);
+   c.bezierCurveTo(308,118,296,168,302,206);
+   c.quadraticCurveTo(312,270,338,328);
+   c.lineTo(230,328); c.lineTo(230,118); c.closePath(); c.stroke();
+   c.beginPath(); c.moveTo(200,44); c.quadraticCurveTo(230,68,260,44); c.stroke();
+   c.globalAlpha=.6;
+   c.beginPath(); c.moveTo(210,48); c.lineTo(222,124); c.lineTo(222,328); c.moveTo(250,48); c.lineTo(238,124); c.lineTo(238,328); c.stroke();
+   rr(c,158,250,44,40,4); c.stroke(); rr(c,258,250,44,40,4); c.stroke();
+   c.globalAlpha=1;
+ },arrows:[{key:'shoulder',a:[140,20],b:[320,20]},{key:'chest',a:[156,224],b:[304,224]},{key:'len',a:[190,72],b:[190,326],at:.46},{key:'hemline',a:[122,356],b:[338,356]}]}
 };
 
 /* ---------- 狀態 ---------- */
