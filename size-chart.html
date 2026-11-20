@@ -88,7 +88,7 @@ const TEMPLATES={
   badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
  jacket:{name:'外套(正常版)',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','44','54','66','58']],cm:true,
   badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
- vest:{name:'背心',layout:'bottom',cols:['肩寬','胸寬','衣長','下擺'],rows:[['F','36','46','56','50']],cm:true,
+ vest:{name:'背心',layout:'bottom',cols:['肩寬','胸寬','衣長','下擺'],rows:[['F','36','46','50','50']],cm:true,
   badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',hemline:'下擺'}},
  longtop:{name:'長袖上衣',layout:'bottom',cols:['肩寬','胸寬','衣長','袖長'],rows:[['F','40','50','64','58']],cm:true,
   badges:['','',''],bstyle:'dark',trial:'',feel:'',arrows:{shoulder:'肩寬',chest:'胸寬',len:'衣長',sleeve:'袖長'}},
@@ -176,24 +176,24 @@ const ILLU={
    c.globalAlpha=1;
  },arrows:[{key:'shoulder',a:[186,22],b:[394,22]},{key:'chest',a:[174,206],b:[406,206]},{key:'len',a:[226,64],b:[226,456],at:.48},{key:'sleeve',a:[172,54],b:[48,390]}]},
 
- vest:{w:460,h:540,draw(c){
-   // 無袖背心：肩線之後袖窿向內收，下擺略寬
+ vest:{w:460,h:400,draw(c){
+   // 短版無袖背心：袖窿後衣身收到腰際
    c.beginPath();
    c.moveTo(200,44); c.lineTo(140,66);
    c.bezierCurveTo(152,118,164,168,158,206);
-   c.quadraticCurveTo(146,340,108,488);
-   c.lineTo(230,488); c.lineTo(230,118); c.closePath(); c.stroke();
+   c.quadraticCurveTo(148,270,122,328);
+   c.lineTo(230,328); c.lineTo(230,118); c.closePath(); c.stroke();
    c.beginPath();
    c.moveTo(260,44); c.lineTo(320,66);
    c.bezierCurveTo(308,118,296,168,302,206);
-   c.quadraticCurveTo(314,340,352,488);
-   c.lineTo(230,488); c.lineTo(230,118); c.closePath(); c.stroke();
+   c.quadraticCurveTo(312,270,338,328);
+   c.lineTo(230,328); c.lineTo(230,118); c.closePath(); c.stroke();
    c.beginPath(); c.moveTo(200,44); c.quadraticCurveTo(230,68,260,44); c.stroke();
    c.globalAlpha=.6;
-   c.beginPath(); c.moveTo(210,48); c.lineTo(222,124); c.lineTo(222,488); c.moveTo(250,48); c.lineTo(238,124); c.lineTo(238,488); c.stroke();
-   rr(c,128,292,50,52,4); c.stroke(); rr(c,282,292,50,52,4); c.stroke();
+   c.beginPath(); c.moveTo(210,48); c.lineTo(222,124); c.lineTo(222,328); c.moveTo(250,48); c.lineTo(238,124); c.lineTo(238,328); c.stroke();
+   rr(c,158,250,44,40,4); c.stroke(); rr(c,258,250,44,40,4); c.stroke();
    c.globalAlpha=1;
- },arrows:[{key:'shoulder',a:[140,20],b:[320,20]},{key:'chest',a:[154,228],b:[306,228]},{key:'len',a:[196,62],b:[196,486],at:.7},{key:'hemline',a:[108,516],b:[352,516]}]},
+ },arrows:[{key:'shoulder',a:[140,20],b:[320,20]},{key:'chest',a:[156,224],b:[304,224]},{key:'len',a:[190,72],b:[190,326],at:.46},{key:'hemline',a:[122,356],b:[338,356]}]},
 
  longtop:{w:780,h:510,draw(c){
    // 圓領套頭長袖
