@@ -2,6 +2,7 @@
  * 圖片批次轉 JPG（純前端）
  * TARGET_WIDTH / MAX_BYTES 可調
  * 下載為個別 JPG；一鍵下載全部 = 連續下載多檔（不打包 ZIP）
+ * 有填編號時，檔名依目前順序為 {編號}A01.jpg、{編號}A02.jpg…
  */
 (function () {
   "use strict";
@@ -11,6 +12,12 @@
   const MIN_QUALITY = 0.35;
   const MAX_QUALITY = 0.92;
   const MIN_WIDTH = 320;
+
+  const Naming = window.ImageToJpgNaming;
+  if (!Naming) {
+    console.error("找不到檔名規則模組");
+    return;
+  }
 
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
@@ -23,12 +30,15 @@
   const heroStats = document.getElementById("heroStats");
   const statTotal = document.getElementById("statTotal");
   const statDone = document.getElementById("statDone");
+  const styleCodeInput = document.getElementById("styleCode");
+  const codeHint = document.getElementById("codeHint");
 
   /** @type {Array<any>} */
   let items = [];
   let processing = false;
   let dragDepth = 0;
   let downloadingAll = false;
+  let dragItemId = null;
 
   dropzone.addEventListener("click", () => fileInput.click());
   dropzone.addEventListener("keydown", (e) => {
@@ -46,15 +56,21 @@
 
   window.addEventListener("dragenter", (e) => {
     e.preventDefault();
+    if (dragItemId) return;
     dragDepth += 1;
     dropzone.classList.add("is-drag");
   });
   window.addEventListener("dragover", (e) => {
     e.preventDefault();
+    if (dragItemId) {
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      return;
+    }
     if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
   });
   window.addEventListener("dragleave", (e) => {
     e.preventDefault();
+    if (dragItemId) return;
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) dropzone.classList.remove("is-drag");
   });
@@ -62,8 +78,22 @@
     e.preventDefault();
     dragDepth = 0;
     dropzone.classList.remove("is-drag");
+    if (dragItemId) return;
     const files = e.dataTransfer && e.dataTransfer.files;
     if (files && files.length) addFiles(files);
+  });
+
+  styleCodeInput.addEventListener("input", () => {
+    updateNameLabels();
+    updateChrome();
+  });
+  styleCodeInput.addEventListener("blur", () => {
+    const normalized = Naming.normalizeStyleCode(styleCodeInput.value);
+    if (styleCodeInput.value !== normalized) {
+      styleCodeInput.value = normalized;
+      updateNameLabels();
+      updateChrome();
+    }
   });
 
   btnClear.addEventListener("click", () => {
@@ -74,15 +104,21 @@
   });
 
   btnDownloadAll.addEventListener("click", async () => {
-    const ready = items.filter((i) => i.status === "done" && i.blob);
-    if (!ready.length || downloadingAll) return;
+    const readyIdx = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].status === "done" && items[i].blob) readyIdx.push(i);
+    }
+    if (!readyIdx.length || downloadingAll) return;
     downloadingAll = true;
     btnDownloadAll.disabled = true;
     const label = btnDownloadAll.querySelector(".btn-label");
+    const code = getStyleCode();
     try {
-      for (let i = 0; i < ready.length; i++) {
-        if (label) label.textContent = "下載中 " + (i + 1) + "/" + ready.length;
-        downloadBlob(ready[i].blob, ready[i].outName || "image.jpg");
+      for (let n = 0; n < readyIdx.length; n++) {
+        const i = readyIdx[n];
+        const it = items[i];
+        if (label) label.textContent = "下載中 " + (n + 1) + "/" + readyIdx.length;
+        downloadBlob(it.blob, Naming.fileName(code, i, it.outName));
         await sleep(380);
       }
     } finally {
@@ -94,6 +130,10 @@
 
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
+  }
+
+  function getStyleCode() {
+    return Naming.normalizeStyleCode(styleCodeInput.value);
   }
 
   function revokeUrls(it) {
@@ -125,6 +165,26 @@
   function isLikelyImage(file) {
     if (file.type && file.type.startsWith("image/")) return true;
     return /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name);
+  }
+
+  function moveItem(from, to) {
+    if (from < 0 || from >= items.length) return;
+    if (to < 0 || to >= items.length || from === to) return;
+    const [it] = items.splice(from, 1);
+    items.splice(to, 0, it);
+    render();
+  }
+
+  function moveItemBefore(dragId, targetId, placeAfter) {
+    if (!dragId || dragId === targetId) return;
+    const from = items.findIndex((x) => x.id === dragId);
+    if (from < 0) return;
+    const [it] = items.splice(from, 1);
+    let to = items.findIndex((x) => x.id === targetId);
+    if (to < 0) to = items.length;
+    else if (placeAfter) to = to + 1;
+    items.splice(to, 0, it);
+    render();
   }
 
   async function processQueue() {
@@ -281,15 +341,84 @@
     return status;
   }
 
+  function fallbackBase(it) {
+    if (it.outName) return it.outName.replace(/\.jpe?g$/i, "");
+    return (it.name || "").replace(/\.[^.]+$/, "") || "image";
+  }
+
+  function updateNameLabels() {
+    const code = getStyleCode();
+    const cards = listEl.querySelectorAll(".card");
+    cards.forEach((li, index) => {
+      const it = items[index];
+      if (!it) return;
+      const out = li.querySelector(".thumb-outname");
+      if (out) out.textContent = Naming.displayName(code, index, fallbackBase(it));
+    });
+    if (code) {
+      const sample = code + "A01.jpg";
+      const sample2 = items.length >= 2 ? "、" + code + "A02.jpg" : "";
+      codeHint.textContent = "將依目前順序命名為 " + sample + sample2 + (items.length > 2 ? "…" : "");
+    } else {
+      codeHint.textContent = "填入後，檔名會依目前順序命名，例如 M99A01.jpg";
+    }
+  }
+
+  function clearDropTargets() {
+    listEl.querySelectorAll(".card.is-drop-target").forEach((el) => {
+      el.classList.remove("is-drop-target");
+    });
+  }
+
   function render() {
     listEl.innerHTML = "";
     const has = items.length > 0;
     emptyEl.hidden = has;
     toolbar.hidden = !has;
+    const code = getStyleCode();
 
-    for (const it of items) {
+    for (let index = 0; index < items.length; index++) {
+      const it = items[index];
       const li = document.createElement("li");
       li.className = "card status-" + it.status;
+      li.draggable = true;
+      li.dataset.id = it.id;
+      if (dragItemId && it.id === dragItemId) li.classList.add("is-dragging");
+
+      li.addEventListener("dragstart", (e) => {
+        dragItemId = it.id;
+        li.classList.add("is-dragging");
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", it.id);
+        }
+      });
+      li.addEventListener("dragend", () => {
+        dragItemId = null;
+        li.classList.remove("is-dragging");
+        clearDropTargets();
+      });
+      li.addEventListener("dragover", (e) => {
+        if (!dragItemId || dragItemId === it.id) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        clearDropTargets();
+        li.classList.add("is-drop-target");
+      });
+      li.addEventListener("dragleave", (e) => {
+        if (!li.contains(e.relatedTarget)) li.classList.remove("is-drop-target");
+      });
+      li.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const fromId = dragItemId || (e.dataTransfer && e.dataTransfer.getData("text/plain"));
+        const rect = li.getBoundingClientRect();
+        const placeAfter = e.clientX > rect.left + rect.width / 2;
+        clearDropTargets();
+        moveItemBefore(fromId, it.id, placeAfter);
+        dragItemId = null;
+      });
 
       const thumb = document.createElement("div");
       thumb.className = "thumb";
@@ -299,6 +428,7 @@
         img.src = src;
         img.alt = it.name;
         img.loading = "lazy";
+        img.draggable = false;
         thumb.appendChild(img);
       }
       const badge = document.createElement("span");
@@ -306,6 +436,16 @@
       if (it.status === "done") badge.classList.add("ok");
       badge.textContent = badgeText(it.status);
       thumb.appendChild(badge);
+
+      const seq = document.createElement("span");
+      seq.className = "thumb-seq";
+      seq.textContent = String(index + 1);
+      thumb.appendChild(seq);
+
+      const outname = document.createElement("span");
+      outname.className = "thumb-outname";
+      outname.textContent = Naming.displayName(code, index, fallbackBase(it));
+      thumb.appendChild(outname);
 
       const body = document.createElement("div");
       body.className = "card-body";
@@ -339,6 +479,33 @@
         meta.textContent = it.err || "轉檔失敗";
       }
 
+      const order = document.createElement("div");
+      order.className = "card-order";
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "btn btn-order";
+      prev.textContent = "← 往前";
+      prev.setAttribute("aria-label", "往前移動");
+      prev.disabled = index === 0;
+      prev.addEventListener("click", (e) => {
+        e.stopPropagation();
+        moveItem(index, index - 1);
+      });
+      const nextBtn = document.createElement("button");
+      nextBtn.type = "button";
+      nextBtn.className = "btn btn-order";
+      nextBtn.textContent = "往後 →";
+      nextBtn.setAttribute("aria-label", "往後移動");
+      nextBtn.disabled = index === items.length - 1;
+      nextBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        moveItem(index, index + 1);
+      });
+      prev.addEventListener("mousedown", (e) => e.stopPropagation());
+      nextBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+      order.appendChild(prev);
+      order.appendChild(nextBtn);
+
       const actions = document.createElement("div");
       actions.className = "card-actions";
       if (it.status === "done" && it.blob) {
@@ -348,8 +515,10 @@
         dl.textContent = "下載";
         dl.addEventListener("click", (e) => {
           e.stopPropagation();
-          downloadBlob(it.blob, it.outName || "image.jpg");
+          const i = items.findIndex((x) => x.id === it.id);
+          downloadBlob(it.blob, Naming.fileName(getStyleCode(), i < 0 ? index : i, it.outName));
         });
+        dl.addEventListener("mousedown", (e) => e.stopPropagation());
         actions.appendChild(dl);
       }
       const rm = document.createElement("button");
@@ -362,15 +531,18 @@
         items = items.filter((x) => x.id !== it.id);
         render();
       });
+      rm.addEventListener("mousedown", (e) => e.stopPropagation());
       actions.appendChild(rm);
 
       body.appendChild(name);
       body.appendChild(meta);
+      body.appendChild(order);
       body.appendChild(actions);
       li.appendChild(thumb);
       li.appendChild(body);
       listEl.appendChild(li);
     }
+    updateNameLabels();
     updateChrome();
   }
 
@@ -378,6 +550,7 @@
     const done = items.filter((i) => i.status === "done" && i.blob).length;
     const busy = items.some((i) => i.status === "queued" || i.status === "working");
     const has = items.length > 0;
+    const code = getStyleCode();
     heroStats.hidden = !has;
     statTotal.textContent = String(items.length);
     statDone.textContent = String(done);
@@ -387,7 +560,9 @@
       ? busy
         ? "轉換中，完成後即可下載"
         : done
-          ? "可單張下載，或一次下載全部 JPG"
+          ? code
+            ? "可單張下載，或一次下載全部 JPG（檔名為 " + code + "A01.jpg…）"
+            : "可單張下載，或一次下載全部 JPG"
           : "尚無可下載的檔案"
       : "";
   }

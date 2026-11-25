@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>圖片轉 JPG</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=20261125" />
 </head>
 <body>
   <div class="app">
@@ -13,7 +13,7 @@
         <p class="brand">AMORE</p>
         <p class="eyebrow">影像工具 · 單機版</p>
         <h1>圖片轉 JPG</h1>
-        <p class="lede">拖入多張照片，自動轉成寬 1000 的等比 JPG，並壓到約 500KB 以下。以縮圖為主，方便你邊看邊挑。</p>
+        <p class="lede">拖入多張照片，自動轉成寬 1000 的等比 JPG，並壓到約 500KB 以下。可填編號、調整順序，下載檔名就會是 M99A01、M99A02…。以縮圖為主，方便你邊看邊挑。</p>
       </div>
       <div class="hero-stats" id="heroStats" hidden>
         <div class="stat"><span class="stat-num" id="statTotal">0</span><span class="stat-label">張</span></div>
@@ -36,6 +36,12 @@
       <input id="fileInput" type="file" multiple accept="image/*,.heic,.heif" />
     </section>
 
+    <section class="code-row" id="codeRow">
+      <label for="styleCode">編號</label>
+      <input id="styleCode" type="text" maxlength="32" placeholder="例如 M99" autocomplete="off" spellcheck="false" inputmode="text" />
+      <p class="code-hint" id="codeHint">填入後，檔名會依目前順序命名，例如 M99A01.jpg</p>
+    </section>
+
     <div class="bar" id="toolbar" hidden>
       <button type="button" class="btn btn-primary" id="btnDownloadAll" disabled>
         <span class="btn-label">下載全部 JPG</span>
@@ -44,7 +50,7 @@
       <p class="bar-hint" id="barHint"></p>
     </div>
 
-    <p class="empty" id="empty">還沒有圖片。拖進來後會以縮圖卡片呈現，方便你核對構圖與色調。</p>
+    <p class="empty" id="empty">還沒有圖片。拖進來後會以縮圖卡片呈現，方便你核對構圖與色調。可先填編號，再用按鈕或拖曳調整順序。</p>
 
     <ul class="grid" id="list" aria-live="polite"></ul>
 
@@ -52,6 +58,7 @@
       <p>純前端處理，圖片不會上傳。參數可在 <code>js/app.js</code> 調整寬度與容量上限。</p>
     </footer>
   </div>
-  <script src="js/app.js"></script>
+  <script src="js/naming.js?v=20261125"></script>
+  <script src="js/app.js?v=20261125"></script>
 </body>
 </html>

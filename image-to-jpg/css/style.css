@@ -228,6 +228,7 @@ body {
 .card {
   display: flex;
   flex-direction: column;
+  cursor: grab;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -317,8 +318,110 @@ body {
   border-radius: 6px;
 }
 
+
+.code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.code-row label {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.code-row input {
+  font: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  width: 11em;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+.code-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12);
+}
+.code-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  flex: 1;
+  min-width: 12em;
+  line-height: 1.5;
+}
+
+.card.is-dragging {
+  opacity: 0.45;
+  transform: none;
+  box-shadow: var(--shadow);
+}
+.card.is-drop-target {
+  box-shadow: 0 0 0 2px var(--accent), 0 14px 36px rgba(26, 23, 20, 0.1);
+}
+
+.thumb-seq {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 1.6em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  background: rgba(26, 23, 20, 0.72);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+.thumb-outname {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  padding: 5px 9px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: rgba(26, 23, 20, 0.76);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-order {
+  display: flex;
+  gap: 6px;
+}
+.btn-order {
+  flex: 1;
+  border-radius: 10px;
+  padding: 7px 8px;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+.btn-order:disabled {
+  opacity: 0.32;
+}
+
 @media (max-width: 560px) {
   .app { padding: 28px 16px 56px; }
   .drop-inner { padding: 36px 18px; }
   .bar-hint { margin-left: 0; width: 100%; }
+  .code-row input { width: 100%; }
+  .code-hint { min-width: 100%; }
 }
